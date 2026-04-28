@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1320px">
+<title>HR决策看板 · 产品介绍</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+[contenteditable]:focus { outline: 2px dashed rgba(96,165,250,.6); outline-offset: 2px; border-radius: 4px; }
+
+body {
+  background: #E4E8EF;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 0 80px;
+  gap: 0;
+  min-width: 1320px;
+  font-family: 'Noto Sans SC', system-ui, sans-serif;
+}
+
+/* ─── 页面通用 ─── */
+.cover-page, .ppt-page, .end-page {
+  width: 1280px;
+  min-height: 720px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 28px rgba(15,45,92,.11);
+  flex-shrink: 0;
+  margin-bottom: 40px;
+  overflow: hidden;
+}
+.ppt-page { padding: 32px 40px; }
+.data-page {
+  width: 1280px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 28px rgba(15,45,92,.11);
+  padding: 22px 30px;
+  flex-shrink: 0;
+  margin-bottom: 40px;
+  display: none;
+}
+
+/* ─── 封面页 ─── */
+.cover-blue {
+  background: linear-gradient(135deg, #0F2D5C 0%, #1E4D8C 60%, #2D6BB5 100%);
+  display: flex;
+}
+.cover-accent {
+  width: 8px;
+  background: linear-gradient(180deg, #60A5FA, #3A7FCA, #fac858);
+  flex-shrink: 0;
+}
+.cover-body {
+  flex: 1; padding: 48px 56px;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.cover-brand { font-size: 14px; color: rgba(255,255,255,.5); letter-spacing: 2px; }
+.cover-center { flex:1; display:flex; flex-direction:column; justify-content:center; gap:18px; }
+.cover-tag {
+  display: inline-block; width: fit-content;
+  background: rgba(255,255,255,.12); color: #60A5FA;
+  border: 1px solid rgba(96,165,250,.3); border-radius: 20px;
+  padding: 5px 16px; font-size: 13px;
+}
+.cover-title { font-size: 48px; font-weight: 900; color: #fff; line-height: 1.15; }
+.cover-title span { color: #fac858; }
+.cover-subtitle { font-size: 18px; color: rgba(255,255,255,.7); line-height: 1.7; max-width: 620px; }
+.cover-badges { display: flex; gap: 12px; margin-top: 8px; }
+.cover-badge {
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15);
+  color: rgba(255,255,255,.75); border-radius: 6px; padding: 5px 14px; font-size: 13px;
+}
+.cover-footer {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  padding-top: 24px; border-top: 1px solid rgba(255,255,255,.12);
+}
+.cover-meta { display: flex; gap: 28px; }
+.cover-meta-item { font-size: 13px; color: rgba(255,255,255,.55); }
+.cover-logo { font-size: 13px; color: rgba(255,255,255,.3); }
+
+/* ─── 内页通用 ─── */
+.page-header {
+  background: linear-gradient(90deg, #0F2D5C, #1E4D8C);
+  margin: -32px -40px 24px;
+  padding: 18px 40px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.page-header h1 { font-size: 20px; font-weight: 900; color: #fff; }
+.page-header .page-num { font-size: 13px; color: rgba(255,255,255,.45); }
+.section-title {
+  font-size: 15px; font-weight: 700; color: #0F2D5C;
+  padding-left: 10px; border-left: 3px solid #3A7FCA;
+  margin-bottom: 12px;
+}
+
+/* ─── KPI 卡片 ─── */
+.kpi-row { display: flex; gap: 14px; margin-bottom: 22px; }
+.kpi-card {
+  flex: 1; background: linear-gradient(135deg, #F0F5FF, #E8EFF9);
+  border-radius: 10px; padding: 14px 18px;
+  border: 1px solid #D4E1F7;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.kpi-card.accent { background: linear-gradient(135deg, #0F2D5C, #1E4D8C); border-color: #0F2D5C; }
+.kpi-card.accent .kv, .kpi-card.accent .kl { color: #fff; }
+.kpi-card.accent .kl { color: rgba(255,255,255,.65); }
+.kpi-card.gold { background: linear-gradient(135deg, #FFFBF0, #FFF4D6); border-color: #F5D87A; }
+.kpi-card.gold .kv { color: #92600A; }
+.kv { font-size: 26px; font-weight: 900; color: #0D1117; line-height: 1; }
+.kv sup { font-size: 14px; font-weight: 500; }
+.kl { font-size: 13px; color: #374151; margin-top: 2px; }
+.kl-tag {
+  display: inline-block; font-size: 11px; padding: 2px 7px;
+  border-radius: 4px; margin-top: 4px; font-weight: 700;
+}
+.tag-up { background: #DCFCE7; color: #166534; }
+.tag-dn { background: #FEE2E2; color: #991B1B; }
+.tag-neu { background: #EFF6FF; color: #1E40AF; }
+
+/* ─── 内容区域 ─── */
+.content-grid { display: grid; gap: 20px; }
+.g2 { grid-template-columns: 1fr 1fr; }
+.g3 { grid-template-columns: 1fr 1fr 1fr; }
+.g4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+.chart-box {
+  background: #F8FAFF; border-radius: 10px; border: 1px solid #DCE8F7;
+  padding: 16px; overflow: hidden;
+}
+.chart-box h4 { font-size: 14px; font-weight: 700; color: #0F2D5C; margin-bottom: 10px; }
+.chart-area { width: 100%; }
+
+/* ─── 四象限布局 ─── */
+.quadrant-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 6px; }
+.quad-card {
+  background: linear-gradient(135deg, #F0F5FF, #E8EFF9);
+  border: 1px solid #D4E1F7; border-radius: 12px; padding: 20px 24px;
+  position: relative; overflow: hidden;
+}
+.quad-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 4px;
+}
+.quad-card:nth-child(1)::before { background: linear-gradient(90deg, #3A7FCA, #60A5FA); }
+.quad-card:nth-child(2)::before { background: linear-gradient(90deg, #9a60b4, #C084FC); }
+.quad-card:nth-child(3)::before { background: linear-gradient(90deg, #fac858, #FDE68A); }
+.quad-card:nth-child(4)::before { background: linear-gradient(90deg, #ee6666, #FCA5A5); }
+.quad-num { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: rgba(30,77,140,.5); margin-bottom: 6px; }
+.quad-q { font-size: 16px; font-weight: 900; color: #0F2D5C; margin-bottom: 10px; line-height: 1.4; }
+.quad-ans { font-size: 13px; color: #374151; line-height: 1.7; }
+.quad-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.quad-tag {
+  font-size: 11px; padding: 3px 9px; border-radius: 4px; font-weight: 700;
+  background: rgba(58,127,202,.1); color: #1E4D8C;
+  border: 1px solid rgba(58,127,202,.2);
+}
+
+/* ─── 8模块网格 ─── */
+.module-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.module-card {
+  background: #F8FAFF; border: 1px solid #DCE8F7; border-radius: 10px;
+  padding: 16px; position: relative;
+}
+.module-card::after {
+  content: attr(data-num);
+  position: absolute; top: 10px; right: 12px;
+  font-size: 22px; font-weight: 900; color: rgba(58,127,202,.1);
+}
+.module-icon { font-size: 22px; margin-bottom: 8px; }
+.module-name { font-size: 14px; font-weight: 900; color: #0F2D5C; margin-bottom: 6px; }
+.module-desc { font-size: 12px; color: #374151; line-height: 1.6; }
+.module-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.module-tag { font-size: 10px; background: #EFF6FF; color: #1E40AF; border-radius: 3px; padding: 2px 6px; }
+
+/* ─── 评分区域 ─── */
+.score-layout { display: grid; grid-template-columns: 300px 1fr; gap: 24px; align-items: center; }
+.score-items { display: flex; flex-direction: column; gap: 10px; }
+.score-row { display: flex; align-items: center; gap: 10px; }
+.score-label { font-size: 13px; color: #374151; width: 90px; flex-shrink: 0; }
+.score-bar-bg { flex: 1; background: #E8EFF9; border-radius: 4px; height: 8px; overflow: hidden; }
+.score-bar { height: 8px; border-radius: 4px; background: linear-gradient(90deg, #3A7FCA, #60A5FA); }
+.score-pts { font-size: 12px; font-weight: 700; color: #1E4D8C; width: 55px; text-align: right; flex-shrink: 0; }
+
+/* ─── 流程步骤 ─── */
+.flow-steps { display: flex; align-items: flex-start; gap: 0; margin-top: 16px; }
+.flow-step { flex: 1; text-align: center; position: relative; }
+.flow-step:not(:last-child)::after {
+  content: '→';
+  position: absolute; right: -12px; top: 18px;
+  font-size: 20px; color: #3A7FCA; font-weight: 900;
+}
+.step-circle {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, #1E4D8C, #3A7FCA);
+  color: #fff; font-size: 18px; font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 10px;
+}
+.step-title { font-size: 14px; font-weight: 700; color: #0F2D5C; margin-bottom: 4px; }
+.step-desc { font-size: 12px; color: #374151; line-height: 1.5; padding: 0 6px; }
+
+/* ─── 特性列表 ─── */
+.feature-list { display: flex; flex-direction: column; gap: 10px; }
+.feature-item { display: flex; gap: 10px; align-items: flex-start; }
+.feature-dot {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, #1E4D8C, #3A7FCA);
+  color: #fff; font-size: 11px; font-weight: 900;
+  display: flex; align-items: center; justify-content: center; margin-top: 1px;
+}
+.feature-text { font-size: 13px; color: #374151; line-height: 1.6; }
+.feature-text strong { color: #0F2D5C; }
+
+/* ─── 结尾页 ─── */
+.end-blue {
+  background: linear-gradient(160deg, #0F2D5C 0%, #1E4D8C 100%);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  position: relative;
+}
+.end-body { display:flex; flex-direction:column; align-items:center; gap:18px; padding:60px 80px; text-align:center; }
+.end-icon { font-size:36px; color:#fac858; }
+.end-title { font-size:38px; font-weight:900; color:#fff; }
+.end-subtitle { font-size:17px; color:rgba(255,255,255,.65); }
+.end-divider { width:80px; height:2px; background:linear-gradient(90deg,transparent,#3A7FCA,transparent); margin:4px 0; }
+.end-info { display:flex; gap:48px; }
+.end-info-item { font-size:14px; color:rgba(255,255,255,.65); }
+.end-disclaimer { font-size:12px; color:rgba(255,255,255,.35); max-width:640px; line-height:1.7; margin-top:6px; }
+.end-watermark { position:absolute; bottom:20px; right:28px; font-size:12px; color:rgba(255,255,255,.2); }
+.end-cta {
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+  color: #fff; border-radius: 8px; padding: 10px 32px;
+  font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: 1px;
+  margin-top: 4px;
+}
+.end-cta:hover { background: rgba(255,255,255,.18); }
+
+/* ─── 顶部工具栏 ─── */
+.toolbar {
+  width: 1280px; background: #fff; border-radius: 10px;
+  padding: 12px 20px; margin-bottom: 20px;
+  display: flex; gap: 10px; align-items: center;
+  box-shadow: 0 2px 10px rgba(15,45,92,.08);
+}
+.tb-btn {
+  background: #F0F5FF; border: 1px solid #D4E1F7; color: #1E4D8C;
+  border-radius: 6px; padding: 6px 14px; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all .15s;
+}
+.tb-btn:hover { background: #1E4D8C; color: #fff; border-color: #1E4D8C; }
+.tb-btn.active { background: #0F2D5C; color: #fff; border-color: #0F2D5C; }
+.tb-sep { width: 1px; height: 24px; background: #DCE8F7; margin: 0 4px; }
+.tb-title { font-size: 14px; font-weight: 700; color: #0F2D5C; margin-right: auto; }
+
+/* ─── 数据维护页 ─── */
+.data-tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 2px solid #DCE8F7; padding-bottom: 0; }
+.dtab {
+  padding: 8px 18px; font-size: 13px; font-weight: 700; color: #374151;
+  cursor: pointer; border-radius: 6px 6px 0 0; background: #F0F5FF;
+  border: 1px solid #DCE8F7; border-bottom: none; margin-bottom: -2px;
+}
+.dtab.active { background: #0F2D5C; color: #fff; border-color: #0F2D5C; }
+.data-table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: #0F2D5C; color: #fff; padding: 9px 12px; text-align: center; font-weight: 700; }
+td { padding: 8px 12px; border-bottom: 1px solid #EDF2F9; text-align: center; color: #374151; }
+tr:hover td { background: #F0F5FF; }
+.edit-hint { font-size: 12px; color: #374151; margin-bottom: 8px; }
+
+/* ─── 比较表格 ─── */
+.compare-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.compare-table th { background: linear-gradient(90deg,#0F2D5C,#1E4D8C); color:#fff; padding:10px 16px; }
+.compare-table td { padding: 10px 16px; border-bottom: 1px solid #EDF2F9; color: #374151; }
+.compare-table tr:nth-child(even) td { background: #F8FAFF; }
+.compare-table .check { color: #1E40AF; font-weight: 700; }
+.compare-table .cross { color: #991B1B; }
+
+/* ─── 亮点标签 ─── */
+.highlight-row { display: flex; gap: 14px; margin-top: 14px; }
+.hl-item {
+  flex: 1; background: linear-gradient(135deg, #F0F5FF, #E8EFF9);
+  border: 1px solid #D4E1F7; border-radius: 10px; padding: 14px 18px;
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.hl-icon { font-size: 24px; flex-shrink: 0; }
+.hl-content {}
+.hl-title { font-size: 14px; font-weight: 700; color: #0F2D5C; margin-bottom: 4px; }
+.hl-desc { font-size: 12px; color: #374151; line-height: 1.6; }
+
+/* 进度条颜色变体 */
+.bar-blue { background: linear-gradient(90deg,#3A7FCA,#60A5FA); }
+.bar-purple { background: linear-gradient(90deg,#9a60b4,#C084FC); }
+.bar-amber { background: linear-gradient(90deg,#D97706,#FDE68A); }
+.bar-red { background: linear-gradient(90deg,#C0392B,#FCA5A5); }
+.bar-teal { background: linear-gradient(90deg,#0891B2,#67E8F9); }
+.bar-indigo { background: linear-gradient(90deg,#4F46E5,#A5B4FC); }
+</style>
+</head>
+<body>
+
+<!-- 工具栏 -->
+<div class="toolbar">
+  <span class="tb-title">HR决策看板 · 产品介绍</span>
+  <button class="tb-btn active" id="btnSlide" onclick="switchMode('slide')">📊 介绍页面</button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" id="btnData" onclick="switchMode('data')">🗄️ 数据维护</button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" onclick="exportPNG()">📸 导出PNG</button>
+  <button class="tb-btn" onclick="exportExcel()">📊 导出Excel</button>
+</div>
+
+<!-- ════════════════ 封面页 ════════════════ -->
+<div class="cover-page cover-blue" id="slides">
+  <div class="cover-accent"></div>
+  <div class="cover-body">
+    <div class="cover-brand" contenteditable="true">CreamViz · HR数智工具系列</div>
+    <div class="cover-center">
+      <div class="cover-tag" contenteditable="true">2026年 · 产品介绍</div>
+      <h1 class="cover-title" contenteditable="true">HR<span>决策</span>看板<br>让数据驱动人力管理</h1>
+      <div class="cover-subtitle" contenteditable="true">
+        从"看报表"到"做决策"——一套专为HR管理者设计的<br>
+        可视化决策支持系统，覆盖组织运营全链路
+      </div>
+      <div class="cover-badges">
+        <span class="cover-badge" contenteditable="true">🏢 组织总览</span>
+        <span class="cover-badge" contenteditable="true">📈 人效分析</span>
+        <span class="cover-badge" contenteditable="true">🎯 招聘管理</span>
+        <span class="cover-badge" contenteditable="true">⚠️ 风险预警</span>
+        <span class="cover-badge" contenteditable="true">💡 管理建议</span>
+      </div>
+    </div>
+    <div class="cover-footer">
+      <div class="cover-meta">
+        <div class="cover-meta-item" contenteditable="true">📅 发布：2026年4月</div>
+        <div class="cover-meta-item" contenteditable="true">🎨 出品：CreamViz by Alin</div>
+        <div class="cover-meta-item" contenteditable="true">🔖 版本：v1.0</div>
+      </div>
+      <div class="cover-logo">© CreamViz by Alin</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ P1：产品定位与价值 ════════════════ -->
+<div class="ppt-page">
+  <div class="page-header">
+    <h1>产品定位 · 不只是报表，是决策驾驶舱</h1>
+    <span class="page-num">01 / 05</span>
+  </div>
+
+  <!-- KPI 行 -->
+  <div class="kpi-row">
+    <div class="kpi-card accent">
+      <div class="kv">8<sup>大模块</sup></div>
+      <div class="kl">覆盖HR管理全链路</div>
+    </div>
+    <div class="kpi-card gold">
+      <div class="kv">4<sup>个核心问题</sup></div>
+      <div class="kl">精准回答管理者关切</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kv">1<sup>个健康评分</sup></div>
+      <div class="kl">组织健康度量化呈现</div>
+      <div class="kl-tag tag-neu">动态计算</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kv">100<sup>%</sup></div>
+      <div class="kl">数据可自定义编辑</div>
+      <div class="kl-tag tag-up">无需部署</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kv">单<sup>文件</sup></div>
+      <div class="kl">本地HTML，开箱即用</div>
+      <div class="kl-tag tag-neu">永久存档</div>
+    </div>
+  </div>
+
+  <div class="content-grid g2" style="grid-template-columns: 55% 43%; gap: 20px;">
+    <!-- 左：核心理念 -->
+    <div>
+      <div class="section-title">核心设计理念</div>
+      <div style="background: linear-gradient(135deg,#0F2D5C,#1E4D8C); border-radius:12px; padding:22px 26px; margin-bottom:16px;">
+        <div style="font-size:18px; font-weight:900; color:#fac858; text-align:center; letter-spacing:4px; margin-bottom:12px;">看现状 · 找问题 · 识风险 · 提策略</div>
+        <div style="font-size:13px; color:rgba(255,255,255,.75); text-align:center; line-height:1.8;">
+          不堆砌数字，只提炼关键信号<br>每一张图表背后，都是一个需要被回答的管理问题
+        </div>
+      </div>
+      <div class="feature-list">
+        <div class="feature-item">
+          <div class="feature-dot">①</div>
+          <div class="feature-text"><strong>数据驱动</strong>：全部图表由单一数据源驱动，一键切换月份，历史数据随时对比</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-dot">②</div>
+          <div class="feature-text"><strong>决策导向</strong>：不只是数字展示——每个模块都直接指向一个管理行动</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-dot">③</div>
+          <div class="feature-text"><strong>风险前置</strong>：内置6大风险预警规则，将被动发现问题变为主动识别风险</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-dot">④</div>
+          <div class="feature-text"><strong>开箱即用</strong>：单文件HTML，无需安装、无需服务器，浏览器直接打开</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右：传统vs本产品对比 -->
+    <div>
+      <div class="section-title">传统报表 vs HR决策看板</div>
+      <table class="compare-table">
+        <tr>
+          <th>对比维度</th>
+          <th>传统HR报表</th>
+          <th>HR决策看板</th>
+        </tr>
+        <tr>
+          <td>信息组织</td>
+          <td class="cross">数字罗列</td>
+          <td class="check">问题导向结构</td>
+        </tr>
+        <tr>
+          <td>风险识别</td>
+          <td class="cross">人工判断</td>
+          <td class="check">自动预警提示</td>
+        </tr>
+        <tr>
+          <td>趋势分析</td>
+          <td class="cross">单月静态数据</td>
+          <td class="check">12个月滚动趋势</td>
+        </tr>
+        <tr>
+          <td>健康评估</td>
+          <td class="cross">无综合评分</td>
+          <td class="check">组织健康指数</td>
+        </tr>
+        <tr>
+          <td>决策支持</td>
+          <td class="cross">只有数字</td>
+          <td class="check">管理建议自动生成</td>
+        </tr>
+        <tr>
+          <td>数据更新</td>
+          <td class="cross">IT介入重新出报告</td>
+          <td class="check">HR自行维护数据</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ P2：四大核心管理问题 ════════════════ -->
+<div class="ppt-page">
+  <div class="page-header">
+    <h1>四大核心管理问题 · 精准回答管理者关切</h1>
+    <span class="page-num">02 / 05</span>
+  </div>
+
+  <div style="font-size:14px; color:#374151; margin-bottom:16px; line-height:1.6;" contenteditable="true">
+    HR决策看板围绕管理者在每个月度复盘时真正需要回答的四个问题而构建——不是所有指标都重要，只挑最关键的。
+  </div>
+
+  <div class="quadrant-grid">
+    <div class="quad-card">
+      <div class="quad-num">管理问题 01</div>
+      <div class="quad-q" contenteditable="true">🏢 我的组织现在健康吗？</div>
+      <div class="quad-ans" contenteditable="true">通过组织健康指数（满分100分）综合评估编制满足率、人员活跃率、管理层比例等6项核心指标，将"组织健康"从定性感知变为定量分数。</div>
+      <div class="quad-tags">
+        <span class="quad-tag">编制满足率</span>
+        <span class="quad-tag">年龄结构</span>
+        <span class="quad-tag">学历分布</span>
+        <span class="quad-tag">部门配置</span>
+      </div>
+    </div>
+    <div class="quad-card">
+      <div class="quad-num">管理问题 02</div>
+      <div class="quad-q" contenteditable="true">📊 人员配置合理吗？效率够高吗？</div>
+      <div class="quad-ans" contenteditable="true">从人均产出、人均利润、人力成本率三个维度量化"值不值"，通过环比变化判断人效趋势，识别哪些部门存在人员冗余或效率短板。</div>
+      <div class="quad-tags">
+        <span class="quad-tag">人均营收</span>
+        <span class="quad-tag">人均利润</span>
+        <span class="quad-tag">人力成本率</span>
+        <span class="quad-tag">部门人效对比</span>
+      </div>
+    </div>
+    <div class="quad-card">
+      <div class="quad-num">管理问题 03</div>
+      <div class="quad-q" contenteditable="true">🎯 招聘和保留的问题在哪里？</div>
+      <div class="quad-ans" contenteditable="true">招聘漏斗可视化找到流失最大的环节；离职原因结构分析区分"可控流失"与"不可控流失"，帮助HR把资源投在刀刃上。</div>
+      <div class="quad-tags">
+        <span class="quad-tag">招聘完成率</span>
+        <span class="quad-tag">漏斗分析</span>
+        <span class="quad-tag">离职率趋势</span>
+        <span class="quad-tag">核心人员流失</span>
+      </div>
+    </div>
+    <div class="quad-card">
+      <div class="quad-num">管理问题 04</div>
+      <div class="quad-q" contenteditable="true">⚠️ 现在有哪些人才风险需要关注？</div>
+      <div class="quad-ans" contenteditable="true">内置6大风险预警规则自动触发，覆盖离职率超标、招聘延迟、培训缺失、关键岗位空缺等，并附上优先级排序和应对建议。</div>
+      <div class="quad-tags">
+        <span class="quad-tag">离职超标预警</span>
+        <span class="quad-tag">招聘延迟</span>
+        <span class="quad-tag">培训覆盖不足</span>
+        <span class="quad-tag">AI管理建议</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="highlight-row">
+    <div class="hl-item">
+      <div class="hl-icon">🔍</div>
+      <div class="hl-content">
+        <div class="hl-title">问题是入口，数据是证据</div>
+        <div class="hl-desc">每个模块的设计逻辑：先明确管理者要回答什么问题，再决定展示哪些数据</div>
+      </div>
+    </div>
+    <div class="hl-item">
+      <div class="hl-icon">📍</div>
+      <div class="hl-content">
+        <div class="hl-title">指标精选，拒绝信息过载</div>
+        <div class="hl-desc">每个模块只保留最关键的3-5个指标，用颜色和趋势箭头快速传递"好/不好/需关注"</div>
+      </div>
+    </div>
+    <div class="hl-item">
+      <div class="hl-icon">⚡</div>
+      <div class="hl-content">
+        <div class="hl-title">从看懂到行动，15分钟内</div>
+        <div class="hl-desc">整份看板的阅读路径经过设计——5分钟看大盘，5分钟找问题，5分钟读建议</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ P3：八大功能模块 ════════════════ -->
+<div class="ppt-page">
+  <div class="page-header">
+    <h1>八大功能模块 · 覆盖HR管理全链路</h1>
+    <span class="page-num">03 / 05</span>
+  </div>
+
+  <div style="font-size:13px; color:#374151; margin-bottom:16px;" contenteditable="true">
+    从组织全貌到个体发展，从现状描述到风险预警，八个模块构成一套完整的HR管理信息体系。
+  </div>
+
+  <div class="module-grid">
+    <div class="module-card" data-num="01">
+      <div class="module-icon">🏢</div>
+      <div class="module-name" contenteditable="true">组织总览</div>
+      <div class="module-desc" contenteditable="true">编制执行总况，含实际/计划/满足率，净增减变化与人员活跃率</div>
+      <div class="module-tags">
+        <span class="module-tag">编制</span><span class="module-tag">人数</span><span class="module-tag">活跃率</span>
+      </div>
+    </div>
+    <div class="module-card" data-num="02">
+      <div class="module-icon">👥</div>
+      <div class="module-name" contenteditable="true">人员结构分析</div>
+      <div class="module-desc" contenteditable="true">年龄、学历、部门三维分布，识别结构性风险与配置失衡</div>
+      <div class="module-tags">
+        <span class="module-tag">年龄</span><span class="module-tag">学历</span><span class="module-tag">部门</span>
+      </div>
+    </div>
+    <div class="module-card" data-num="03">
+      <div class="module-icon">📈</div>
+      <div class="module-name" contenteditable="true">人效分析</div>
+      <div class="module-desc" contenteditable="true">人均营收/利润/成本三维人效，人力成本率，12个月趋势追踪</div>
+      <div class="module-tags">
+        <span class="module-tag">人均产出</span><span class="module-tag">成本率</span>
+      </div>
+    </div>
+    <div class="module-card" data-num="04">
+      <div class="module-icon">🎯</div>
+      <div class="module-name" contenteditable="true">招聘管理</div>
+      <div class="module-desc" contenteditable="true">招聘需求-完成-在途全追踪，漏斗分析找流失环节，平均到岗天数</div>
+      <div class="module-tags">
+        <span class="module-tag">漏斗</span><span class="module-tag">完成率</span><span class="module-tag">到岗天</span>
+      </div>
+    </div>
+    <div class="module-card" data-num="05">
+      <div class="module-icon">🚪</div>
+      <div class="module-name" contenteditable="true">离职与保留</div>
+      <div class="module-desc" contenteditable="true">总体/主动/核心/新员工离职率四层拆解，离职原因结构分析</div>
+      <div class="module-tags">
+        <span class="module-tag">离职率</span><span class="module-tag">原因分析</span>
+      </div>
+    </div>
+    <div class="module-card" data-num="06">
+      <div class="module-icon">🎓</div>
+      <div class="module-name" contenteditable="true">培训与发展</div>
+      <div class="module-desc" contenteditable="true">覆盖率、人均时长、完成率、认证率、满意度五项指标，部门对比</div>
+      <div class="module-tags">
+        <span class="module-tag">覆盖率</span><span class="module-tag">满意度</span>
+      </div>
+    </div>
+    <div class="module-card" data-num="07">
+      <div class="module-icon">⚠️</div>
+      <div class="module-name" contenteditable="true">风险预警</div>
+      <div class="module-desc" contenteditable="true">6大规则自动触发，高/中/低三级优先级，直接给出应对建议</div>
+      <div class="module-tags">
+        <span class="module-tag">自动触发</span><span class="module-tag">3级预警</span>
+      </div>
+    </div>
+    <div class="module-card" data-num="08">
+      <div class="module-icon">💡</div>
+      <div class="module-name" contenteditable="true">管理建议</div>
+      <div class="module-desc" contenteditable="true">基于数据自动生成本月重点行动建议，告别"看完报表不知道怎么办"</div>
+      <div class="module-tags">
+        <span class="module-tag">智能建议</span><span class="module-tag">行动导向</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:18px; display:flex; gap:14px;">
+    <div style="flex:1; background:linear-gradient(135deg,#F0F5FF,#E8EFF9); border:1px solid #D4E1F7; border-radius:10px; padding:14px 18px;">
+      <div style="font-size:13px; font-weight:700; color:#0F2D5C; margin-bottom:6px;">📊 数据中心（双模式架构）</div>
+      <div style="font-size:12px; color:#374151; line-height:1.7;">所有模块数据均可在"数据中心"独立维护，支持单元格编辑、Excel导入/导出、粘贴导入三种方式，HR即可自主更新，无需技术支持。</div>
+    </div>
+    <div style="flex:1; background:linear-gradient(135deg,#FFFBF0,#FFF4D6); border:1px solid #F5D87A; border-radius:10px; padding:14px 18px;">
+      <div style="font-size:13px; font-weight:700; color:#92600A; margin-bottom:6px;">💾 本地持久化存储</div>
+      <div style="font-size:12px; color:#374151; line-height:1.7;">数据自动保存到浏览器本地，关闭页面后下次打开仍保留上次编辑内容。支持导出PNG截图，一键生成可分享的汇报图片。</div>
+    </div>
+    <div style="flex:1; background:linear-gradient(135deg,#F5F3FF,#EDE9FE); border:1px solid #C4B5FD; border-radius:10px; padding:14px 18px;">
+      <div style="font-size:13px; font-weight:700; color:#4C1D95; margin-bottom:6px;">🔄 12个月趋势追踪</div>
+      <div style="font-size:12px; color:#374151; line-height:1.7;">内置12个月滚动数据结构，人效、招聘、离职、人数趋势图随数据联动更新，让月度复盘真正看到变化方向。</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ P4：组织健康评分体系 ════════════════ -->
+<div class="ppt-page">
+  <div class="page-header">
+    <h1>组织健康评分体系 · 用一个分数看清全局</h1>
+    <span class="page-num">04 / 05</span>
+  </div>
+
+  <div class="content-grid g2" style="grid-template-columns: 42% 56%; gap: 22px;">
+    <!-- 左：仪表盘 -->
+    <div>
+      <div class="section-title">健康指数仪表盘（示例：B+ 72分）</div>
+      <div class="chart-box" style="height:240px;">
+        <div id="gaugeChart" style="height:220px;"></div>
+      </div>
+      <div style="margin-top:12px; background:linear-gradient(135deg,#0F2D5C,#1E4D8C); border-radius:10px; padding:14px 18px; color:#fff;">
+        <div style="font-size:13px; font-weight:700; margin-bottom:8px; color:#fac858;">评分等级说明</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:12px; color:rgba(255,255,255,.8);">
+          <span>🏆 90-100分：A+ 优秀</span>
+          <span>✅ 80-89分：A 良好</span>
+          <span>📊 70-79分：B+ 正常</span>
+          <span>⚠️ 60-69分：B 待改善</span>
+          <span>🚨 50-59分：C 需关注</span>
+          <span>❌ &lt;50分：D 紧急</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右：评分维度 -->
+    <div>
+      <div class="section-title">六大评分维度（满分100分）</div>
+      <div class="score-items">
+        <div class="score-row">
+          <div class="score-label">编制满足率</div>
+          <div class="score-bar-bg"><div class="score-bar bar-blue" style="width:96%"></div></div>
+          <div class="score-pts">19.2 / 20分</div>
+        </div>
+        <div class="score-row">
+          <div class="score-label">人效水平</div>
+          <div class="score-bar-bg"><div class="score-bar bar-purple" style="width:100%"></div></div>
+          <div class="score-pts">20 / 20分</div>
+        </div>
+        <div class="score-row">
+          <div class="score-label">人力成本率</div>
+          <div class="score-bar-bg"><div class="score-bar bar-amber" style="width:53%"></div></div>
+          <div class="score-pts">7.8 / 15分</div>
+        </div>
+        <div class="score-row">
+          <div class="score-label">招聘完成率</div>
+          <div class="score-bar-bg"><div class="score-bar bar-teal" style="width:72%"></div></div>
+          <div class="score-pts">14.4 / 20分</div>
+        </div>
+        <div class="score-row">
+          <div class="score-label">离职控制</div>
+          <div class="score-bar-bg"><div class="score-bar bar-red" style="width:67%"></div></div>
+          <div class="score-pts">10.5 / 15分</div>
+        </div>
+        <div class="score-row">
+          <div class="score-label">培训覆盖</div>
+          <div class="score-bar-bg"><div class="score-bar bar-indigo" style="width:78%"></div></div>
+          <div class="score-pts">7.85 / 10分</div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px; display:flex; gap:12px;">
+        <div style="flex:1; background:#FEF3C7; border:1px solid #FDE68A; border-radius:8px; padding:12px 14px;">
+          <div style="font-size:12px; font-weight:700; color:#92600A; margin-bottom:4px;">🚨 本月主要拉分项</div>
+          <div style="font-size:12px; color:#374151; line-height:1.6;">人力成本率28.6%偏高（目标≤25%），招聘完成率72.1%不达标（目标≥85%），两项合计拖低约13分</div>
+        </div>
+        <div style="flex:1; background:#DCFCE7; border:1px solid #BBF7D0; border-radius:8px; padding:12px 14px;">
+          <div style="font-size:12px; font-weight:700; color:#166534; margin-bottom:4px;">✅ 本月亮点</div>
+          <div style="font-size:12px; color:#374151; line-height:1.6;">人效满分（人均产出85.6万/月），编制满足率96%接近满分，组织结构基本稳健</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ P5：如何使用 & 技术亮点 ════════════════ -->
+<div class="ppt-page">
+  <div class="page-header">
+    <h1>如何使用 · 三步上手，立即产出价值</h1>
+    <span class="page-num">05 / 05</span>
+  </div>
+
+  <div class="section-title" style="margin-bottom:16px;">使用流程</div>
+  <div class="flow-steps" style="margin-bottom:24px;">
+    <div class="flow-step">
+      <div class="step-circle">1</div>
+      <div class="step-title" contenteditable="true">打开文件</div>
+      <div class="step-desc" contenteditable="true">双击HTML文件，用Chrome或Edge浏览器打开，无需安装任何软件</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-circle">2</div>
+      <div class="step-title" contenteditable="true">录入数据</div>
+      <div class="step-desc" contenteditable="true">切换到"数据中心"，按月度填入HR指标数据，支持Excel粘贴导入</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-circle">3</div>
+      <div class="step-title" contenteditable="true">查看看板</div>
+      <div class="step-desc" contenteditable="true">切回"可视化看板"，所有图表自动更新，健康评分实时计算</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-circle">4</div>
+      <div class="step-title" contenteditable="true">导出汇报</div>
+      <div class="step-desc" contenteditable="true">点击"导出PNG"生成截图，直接粘贴进汇报PPT或发送给领导</div>
+    </div>
+    <div class="flow-step" style="position:relative;">
+      <div class="step-circle" style="background:linear-gradient(135deg,#D97706,#fac858);">5</div>
+      <div class="step-title" contenteditable="true">月月存档</div>
+      <div class="step-desc" contenteditable="true">数据自动保存，每月更新数据后另存副本，12个月趋势自然形成</div>
+    </div>
+  </div>
+
+  <div class="content-grid g2" style="grid-template-columns: 48% 50%; gap: 20px;">
+    <!-- 左：技术规格 -->
+    <div>
+      <div class="section-title">技术规格</div>
+      <div class="chart-box" style="padding:14px;">
+        <table style="width:100%; font-size:13px; border-collapse:collapse;">
+          <tr style="border-bottom:1px solid #DCE8F7;">
+            <td style="padding:7px 10px; color:#374151; font-weight:700; width:110px;">文件格式</td>
+            <td style="padding:7px 10px; color:#374151;">单文件HTML（可离线使用）</td>
+          </tr>
+          <tr style="border-bottom:1px solid #DCE8F7;">
+            <td style="padding:7px 10px; color:#374151; font-weight:700;">图表引擎</td>
+            <td style="padding:7px 10px; color:#374151;">ECharts 5.5.0（阿里开源）</td>
+          </tr>
+          <tr style="border-bottom:1px solid #DCE8F7;">
+            <td style="padding:7px 10px; color:#374151; font-weight:700;">数据存储</td>
+            <td style="padding:7px 10px; color:#374151;">浏览器LocalStorage（本地永久）</td>
+          </tr>
+          <tr style="border-bottom:1px solid #DCE8F7;">
+            <td style="padding:7px 10px; color:#374151; font-weight:700;">导入导出</td>
+            <td style="padding:7px 10px; color:#374151;">Excel (.xlsx) 导入/导出</td>
+          </tr>
+          <tr style="border-bottom:1px solid #DCE8F7;">
+            <td style="padding:7px 10px; color:#374151; font-weight:700;">兼容浏览器</td>
+            <td style="padding:7px 10px; color:#374151;">Chrome 90+ / Edge 90+（推荐）</td>
+          </tr>
+          <tr>
+            <td style="padding:7px 10px; color:#374151; font-weight:700;">设计风格</td>
+            <td style="padding:7px 10px; color:#374151;">CreamViz马卡龙奶油主题</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- 右：适用场景 -->
+    <div>
+      <div class="section-title">适用场景</div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; gap:10px; align-items:center; background:#F0F5FF; border:1px solid #D4E1F7; border-radius:8px; padding:10px 14px;">
+          <span style="font-size:18px;">📅</span>
+          <div>
+            <div style="font-size:13px; font-weight:700; color:#0F2D5C;">月度HR例会汇报</div>
+            <div style="font-size:12px; color:#374151;">替代传统Excel表格，10分钟讲完关键问题</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; background:#F5F3FF; border:1px solid #C4B5FD; border-radius:8px; padding:10px 14px;">
+          <span style="font-size:18px;">📊</span>
+          <div>
+            <div style="font-size:13px; font-weight:700; color:#4C1D95;">年度人力资源复盘</div>
+            <div style="font-size:12px; color:#374151;">12个月趋势一览，找到全年关键转折点</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; background:#FFFBF0; border:1px solid #F5D87A; border-radius:8px; padding:10px 14px;">
+          <span style="font-size:18px;">🎯</span>
+          <div>
+            <div style="font-size:13px; font-weight:700; color:#92600A;">HRBP业务伙伴决策</div>
+            <div style="font-size:12px; color:#374151;">部门级数据下钻，支持HRBP精准支持业务</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:8px; padding:10px 14px;">
+          <span style="font-size:18px;">🏢</span>
+          <div>
+            <div style="font-size:13px; font-weight:700; color:#166534;">HR团队日常监控</div>
+            <div style="font-size:12px; color:#374151;">每月更新，风险预警自动触发，防患于未然</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ 结尾页 ════════════════ -->
+<div class="end-page end-blue">
+  <div class="end-body">
+    <div class="end-icon">✦</div>
+    <h2 class="end-title" contenteditable="true">让每一个HR决策都有数据支撑</h2>
+    <div class="end-subtitle" contenteditable="true">HR决策看板 · 现已可用</div>
+    <div class="end-divider"></div>
+    <button class="end-cta" contenteditable="true">立即体验 HR决策看板</button>
+    <div class="end-info">
+      <div class="end-info-item" contenteditable="true">📧 联系：lpz336699@gmail.com</div>
+      <div class="end-info-item" contenteditable="true">🎨 出品：CreamViz by Alin</div>
+      <div class="end-info-item" contenteditable="true">📁 版本：v1.0 · 2026年4月</div>
+    </div>
+    <div class="end-disclaimer" contenteditable="true">
+      本产品为CreamViz系列HR数智工具，基于ECharts构建，单文件HTML开箱即用。<br>
+      如需定制化版本或企业授权，欢迎联系。
+    </div>
+  </div>
+  <div class="end-watermark">© CreamViz by Alin</div>
+</div>
+
+<!-- ════════════════ 数据维护页 ════════════════ -->
+<div class="data-page" id="dataPage">
+  <div style="font-size:16px; font-weight:900; color:#0F2D5C; margin-bottom:16px;">🗄️ 数据维护中心</div>
+  <div class="data-tabs">
+    <div class="dtab active" onclick="switchDTab(0, this)">评分维度数据</div>
+    <div class="dtab" onclick="switchDTab(1, this)">产品对比数据</div>
+    <div class="dtab" onclick="switchDTab(2, this)">模块说明</div>
+  </div>
+
+  <div id="dtab0">
+    <div class="edit-hint">💡 双击单元格编辑数据，修改后图表自动更新</div>
+    <div class="data-table-wrap">
+      <table>
+        <thead><tr><th>评分维度</th><th>当前得分</th><th>满分</th><th>当前比例(%)</th><th>说明</th></tr></thead>
+        <tbody id="scoreTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div id="dtab1" style="display:none">
+    <div class="data-table-wrap">
+      <table>
+        <thead><tr><th>对比维度</th><th>传统HR报表</th><th>HR决策看板</th></tr></thead>
+        <tbody id="compareTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div id="dtab2" style="display:none">
+    <div class="data-table-wrap">
+      <table>
+        <thead><tr><th>模块编号</th><th>模块名称</th><th>核心功能</th><th>关键指标数</th></tr></thead>
+        <tbody id="moduleTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:10px; margin-top:16px;">
+    <button class="tb-btn" onclick="exportExcel()">📊 导出Excel</button>
+    <button class="tb-btn" onclick="importExcel()">📥 导入Excel</button>
+    <input type="file" id="excelInput" accept=".xlsx,.xls" style="display:none" onchange="handleImport(this)">
+  </div>
+</div>
+
+<script>
+// ─── 数据 ───
+const LS_KEY = 'hrIntroPage_v1';
+
+let STATE = {
+  scoreData: [
+    { dim:'编制满足率', score:19.2, full:20, pct:96, note:'编制满足率96.0%' },
+    { dim:'人效水平',   score:20,   full:20, pct:100,note:'人均营收85.6万≥80万基准' },
+    { dim:'人力成本率', score:7.8,  full:15, pct:52, note:'成本率28.6%，目标≤25%' },
+    { dim:'招聘完成率', score:14.4, full:20, pct:72, note:'完成率72.1%，目标≥85%' },
+    { dim:'离职控制',   score:10.5, full:15, pct:70, note:'离职率8.5%，目标≤8%' },
+    { dim:'培训覆盖',   score:7.85, full:10, pct:78.5,note:'覆盖率78.5%' }
+  ],
+  compareData: [
+    ['信息组织','数字罗列','问题导向结构'],
+    ['风险识别','人工判断','自动预警提示'],
+    ['趋势分析','单月静态数据','12个月滚动趋势'],
+    ['健康评估','无综合评分','组织健康指数'],
+    ['决策支持','只有数字','管理建议自动生成'],
+    ['数据更新','IT介入重新出报告','HR自行维护数据']
+  ],
+  moduleData: [
+    ['01','组织总览','编制执行、净增减、活跃率','5项'],
+    ['02','人员结构分析','年龄/学历/部门三维分布','3类图表'],
+    ['03','人效分析','人均营收/利润/成本','6项指标'],
+    ['04','招聘管理','漏斗分析、完成率、到岗天','5项'],
+    ['05','离职与保留','四层离职率、原因分析','6项'],
+    ['06','培训与发展','覆盖率/时长/完成率/满意度','5项'],
+    ['07','风险预警','6大规则、3级优先级','自动触发'],
+    ['08','管理建议','数据驱动的行动建议','智能生成']
+  ]
+};
+
+// 读取本地存储
+try {
+  const saved = localStorage.getItem(LS_KEY);
+  if (saved) Object.assign(STATE, JSON.parse(saved));
+} catch(e) {}
+
+function save() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(STATE)); } catch(e) {}
+}
+
+// ─── 仪表盘图表 ───
+function initGauge() {
+  const total = STATE.scoreData.reduce((s,r) => s+r.score, 0);
+  const score = Math.round(total);
+  const chart = echarts.init(document.getElementById('gaugeChart'));
+  chart.setOption({
+    series:[{
+      type:'gauge', radius:'88%', startAngle:200, endAngle:-20,
+      min:0, max:100,
+      axisLine:{ lineStyle:{ width:18, color:[
+        [.5,'#C0392B'],[.6,'#D97706'],[.7,'#3A7FCA'],[.8,'#1E4D8C'],[1,'#1A6B3C']
+      ]}},
+      pointer:{ length:'65%', width:5, itemStyle:{ color:'#0F2D5C' }},
+      axisTick:{ show:false },
+      splitLine:{ show:false },
+      axisLabel:{
+        distance:4, fontSize:12, color:'#1F2937',
+        formatter:v => [0,50,60,70,80,90,100].includes(v)?v:''
+      },
+      detail:{
+        valueAnimation:true, fontSize:32, fontWeight:900,
+        color:'#0F2D5C', offsetCenter:[0,'30%'],
+        formatter:v => v + '\nB+ 良好'
+      },
+      data:[{ value: score }]
+    }]
+  });
+}
+
+// ─── 表格渲染 ───
+function renderTables() {
+  // 评分表
+  const sb = document.getElementById('scoreTableBody');
+  sb.innerHTML = STATE.scoreData.map((r,i) => `
+    <tr>
+      <td contenteditable="true" onblur="updateScore(${i},'dim',this.textContent)">${r.dim}</td>
+      <td contenteditable="true" onblur="updateScore(${i},'score',this.textContent)">${r.score}</td>
+      <td>${r.full}</td>
+      <td contenteditable="true" onblur="updateScore(${i},'pct',this.textContent)">${r.pct}</td>
+      <td contenteditable="true" onblur="updateScore(${i},'note',this.textContent)">${r.note}</td>
+    </tr>`).join('');
+
+  // 对比表
+  const cb = document.getElementById('compareTableBody');
+  cb.innerHTML = STATE.compareData.map((r,i) => `
+    <tr>${r.map((c,j)=>`<td contenteditable="true" onblur="updateCompare(${i},${j},this.textContent)">${c}</td>`).join('')}</tr>`).join('');
+
+  // 模块表
+  const mb = document.getElementById('moduleTableBody');
+  mb.innerHTML = STATE.moduleData.map((r,i) => `
+    <tr>${r.map((c,j)=>`<td contenteditable="true" onblur="updateModule(${i},${j},this.textContent)">${c}</td>`).join('')}</tr>`).join('');
+}
+
+function updateScore(i,k,v) { STATE.scoreData[i][k]=isNaN(v)?v:parseFloat(v)||v; save(); }
+function updateCompare(i,j,v) { STATE.compareData[i][j]=v; save(); }
+function updateModule(i,j,v) { STATE.moduleData[i][j]=v; save(); }
+
+// ─── 模式切换 ───
+let mode = 'slide';
+function switchMode(m) {
+  mode = m;
+  const slides = document.querySelectorAll('.cover-page,.ppt-page,.end-page');
+  const dataPage = document.getElementById('dataPage');
+  slides.forEach(el => el.style.display = m==='slide' ? '' : 'none');
+  dataPage.style.display = m==='data' ? 'block' : 'none';
+  document.getElementById('btnSlide').classList.toggle('active', m==='slide');
+  document.getElementById('btnData').classList.toggle('active', m==='data');
+}
+
+function switchDTab(idx, el) {
+  ['dtab0','dtab1','dtab2'].forEach((id,i) => {
+    document.getElementById(id).style.display = i===idx ? 'block' : 'none';
+  });
+  document.querySelectorAll('.dtab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ─── 导出 ───
+function exportPNG() {
+  alert('请使用浏览器截图工具（Ctrl+Shift+S 或 Edge截图），对整个看板进行截图保存。');
+}
+
+function exportExcel() {
+  const wb = XLSX.utils.book_new();
+  const ws1 = XLSX.utils.aoa_to_sheet([['评分维度','当前得分','满分','比例%','说明'],...STATE.scoreData.map(r=>[r.dim,r.score,r.full,r.pct,r.note])]);
+  const ws2 = XLSX.utils.aoa_to_sheet([['对比维度','传统报表','HR决策看板'],...STATE.compareData]);
+  const ws3 = XLSX.utils.aoa_to_sheet([['编号','模块名称','核心功能','关键指标数'],...STATE.moduleData]);
+  XLSX.utils.book_append_sheet(wb, ws1, '健康评分');
+  XLSX.utils.book_append_sheet(wb, ws2, '产品对比');
+  XLSX.utils.book_append_sheet(wb, ws3, '模块说明');
+  XLSX.writeFile(wb, 'HR决策看板-数据.xlsx');
+}
+
+function importExcel() { document.getElementById('excelInput').click(); }
+function handleImport(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type:'array' });
+      alert('导入成功！请手动刷新页面查看更新。');
+    } catch(err) { alert('导入失败：' + err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ─── 初始化 ───
+document.addEventListener('DOMContentLoaded', () => {
+  renderTables();
+  initGauge();
+});
+</script>
+</body>
+</html>
