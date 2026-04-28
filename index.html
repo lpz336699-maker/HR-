@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>HR决策看板系统</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg-page:#EAECF0;--bg:#FFFFFF;
+  --sh-up:0 2px 8px rgba(0,0,0,.10),0 1px 3px rgba(0,0,0,.06);
+  --sh-sm:0 1px 4px rgba(0,0,0,.10);--sh-in:inset 0 1px 4px rgba(0,0,0,.08);
+  --sh-deep:0 4px 24px rgba(0,0,0,.12),0 1px 6px rgba(0,0,0,.07);
+  --shadow:#D0D5DD;
+  --t1:#0D1117;--t2:#1F2937;--tm:#4B5563;--t3:#9CA3AF;
+  --accent:#5470c6;--accent-light:rgba(84,112,198,.12);
+  --accent-grad:linear-gradient(135deg,#5470c6 0%,#7bc6e6 100%);
+  --red:#ee6666;--red-light:rgba(238,102,102,.12);
+  --amber:#fac858;--amber-light:rgba(250,200,88,.18);
+  --c1:#7bc6e6;--c2:#fac858;--c3:#9a60b4;--c4:#5470c6;--c5:#ff9f7f;--c6:#ee6666;--c7:#ef65ce;
+  --gap-sm:12px;--gap-md:16px;--gap-lg:24px;
+  --r-sm:12px;--r-md:18px;--r-lg:24px;
+  --font-d:'Nunito',sans-serif;--font-b:'Noto Sans SC',system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--font-b);background:var(--bg-page);display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:24px 40px 60px;gap:14px;-webkit-font-smoothing:antialiased;}
+.global-nav{width:100%;height:60px;padding:0 22px;background:var(--bg);border-radius:var(--r-lg);box-shadow:var(--sh-up);display:flex;justify-content:space-between;align-items:center;}
+.logo{display:flex;flex-direction:column;gap:1px;}
+.logo-name{font-family:var(--font-d);font-size:18px;font-weight:900;color:var(--t1);}
+.logo-name em{color:var(--accent);font-style:normal;}
+.logo-sub{font-size:11px;color:var(--tm);font-weight:500;}
+.nav-r{display:flex;gap:8px;align-items:center;}
+.nbtn{padding:7px 14px;border:none;border-radius:var(--r-sm);font-weight:700;font-size:13px;cursor:pointer;background:var(--bg);color:var(--tm);box-shadow:var(--sh-sm);transition:.18s;font-family:var(--font-b);}
+.nbtn:hover{color:var(--accent);}
+.nbtn.active{color:var(--accent);box-shadow:var(--sh-in);}
+.nbtn-save{background:var(--accent);color:#fff!important;box-shadow:none!important;}
+.view{display:none;width:100%;}
+.view.active{display:flex;flex-direction:column;gap:14px;}
+.page-frame{width:100%;border:2px solid #C8CDD6;border-radius:24px;background:var(--bg-page);padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 2px 16px rgba(0,0,0,.06);}
+.ptab-row{display:flex;gap:var(--gap-sm);align-items:center;}
+.ptab{padding:6px 20px;border:none;border-radius:var(--r-sm);font-weight:700;font-size:13px;cursor:pointer;background:var(--bg);color:var(--tm);box-shadow:var(--sh-sm);transition:.18s;font-family:var(--font-b);}
+.ptab.active{color:var(--accent);box-shadow:var(--sh-in);font-weight:900;}
+.page-canvas{display:none;flex-direction:column;gap:14px;}
+.page-canvas.active{display:flex;}
+.ph{display:flex;justify-content:space-between;align-items:flex-end;padding:4px 2px;}
+.ph-title{font-family:var(--font-d);font-size:22px;font-weight:900;color:var(--t1);}
+.ph-title em{color:var(--accent);font-style:normal;}
+.ph-date{font-size:12px;color:var(--tm);font-weight:600;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap-md);}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap-md);}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap-md);}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--gap-md);}
+.kpi-card{background:var(--bg);box-shadow:var(--sh-up);border-radius:var(--r-md);padding:16px 18px;position:relative;overflow:hidden;}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r-md) var(--r-md) 0 0;}
+.kc-lake::before{background:linear-gradient(90deg,#7bc6e6,#b8e4f5);}
+.kc-yellow::before{background:linear-gradient(90deg,#fac858,#fde09a);}
+.kc-purple::before{background:linear-gradient(90deg,#9a60b4,#c49ad4);}
+.kc-blue::before{background:linear-gradient(90deg,#5470c6,#8fa3df);}
+.kc-coral::before{background:linear-gradient(90deg,#ff9f7f,#ffc8b0);}
+.kc-pink::before{background:linear-gradient(90deg,#ee6666,#f5a0a0);}
+.kl{font-size:12px;font-weight:700;color:var(--tm);margin-top:4px;}
+.kn{font-family:var(--font-d);font-size:2.1rem;font-weight:800;line-height:1.1;margin:5px 0 3px;}
+.kd{font-size:12px;font-weight:700;margin-top:3px;}
+.du{color:var(--accent);}.dd{color:var(--red);}.dw{color:#b06000;}
+.ki{position:absolute;top:16px;right:16px;font-size:1.7rem;opacity:.6;}
+.card{background:var(--bg);box-shadow:var(--sh-up);border-radius:var(--r-md);padding:14px 16px;}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.ct{font-size:14px;font-weight:900;color:var(--t1);display:flex;align-items:center;gap:7px;}
+.ct::before{content:'';width:3px;height:14px;border-radius:2px;background:var(--accent-grad);display:inline-block;flex-shrink:0;}
+.cm{font-size:11px;font-weight:700;color:var(--tm);}
+.badge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;display:inline-block;}
+.bb{background:var(--accent-light);color:var(--accent);}
+.br{background:var(--red-light);color:var(--red);}
+.ba{background:var(--amber-light);color:#b06000;}
+.bp{background:rgba(154,96,180,.12);color:#9a60b4;}
+.risk-list{display:flex;flex-direction:column;gap:8px;}
+.risk-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--r-sm);background:var(--bg-page);}
+.risk-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.risk-dot.red{background:var(--red);}.risk-dot.amber{background:var(--amber);}.risk-dot.blue{background:var(--accent);}
+.risk-label{font-size:13px;font-weight:700;color:var(--t2);flex:1;}
+.risk-val{font-size:12px;font-weight:700;}
+.risk-val.red{color:var(--red);}.risk-val.amber{color:#b06000;}.risk-val.blue{color:var(--accent);}
+.risk-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;}
+.risk-badge.red{background:var(--red-light);color:var(--red);}
+.risk-badge.amber{background:var(--amber-light);color:#b06000;}
+.risk-badge.blue{background:var(--accent-light);color:var(--accent);}
+.advice-list{display:flex;flex-direction:column;gap:8px;}
+.advice-item{display:flex;gap:10px;padding:10px 14px;border-radius:var(--r-sm);background:rgba(84,112,198,.05);border-left:3px solid var(--accent);}
+.advice-num{font-family:var(--font-d);font-size:1.5rem;font-weight:900;color:var(--accent);flex-shrink:0;line-height:1.2;}
+.advice-body{display:flex;flex-direction:column;gap:2px;}
+.advice-title{font-size:13px;font-weight:900;color:var(--t1);}
+.advice-desc{font-size:12px;color:var(--tm);line-height:1.6;}
+.health-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px;}
+.health-num{font-family:var(--font-d);font-size:3.2rem;font-weight:900;color:var(--accent);}
+.health-label{font-size:12px;font-weight:700;color:var(--tm);}
+.health-grade{font-size:14px;font-weight:900;padding:4px 16px;border-radius:20px;background:var(--accent-light);color:var(--accent);}
+.summary-box{background:linear-gradient(135deg,rgba(84,112,198,.07) 0%,rgba(123,198,230,.07) 100%);border:1.5px solid rgba(84,112,198,.18);border-radius:var(--r-md);padding:14px 18px;font-size:13px;line-height:1.8;color:var(--t2);font-weight:500;}
+.summary-box strong{color:var(--t1);font-weight:900;}
+.dc-tab-row{display:flex;gap:8px;margin-bottom:4px;}
+.dc-tab{padding:7px 18px;border:none;border-radius:var(--r-sm);font-weight:700;font-size:13px;cursor:pointer;background:var(--bg);color:var(--tm);box-shadow:var(--sh-sm);font-family:var(--font-b);transition:.18s;}
+.dc-tab.active{color:var(--accent);box-shadow:var(--sh-in);font-weight:900;}
+.dc-page{display:none;}.dc-page.active{display:block;}
+.dc-card{background:var(--bg);box-shadow:var(--sh-up);border-radius:var(--r-md);padding:18px;margin-bottom:14px;}
+.dc-card h3{font-size:14px;font-weight:900;color:var(--t1);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.dc-card h3::before{content:'';width:3px;height:14px;border-radius:2px;background:var(--accent-grad);display:inline-block;flex-shrink:0;}
+.dc-hint{font-size:12px;color:var(--tm);margin-bottom:12px;}
+.dc-tbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap;}
+.dc-tbar-btns{display:flex;gap:7px;flex-wrap:wrap;}
+.dc-btn{padding:7px 16px;border:none;border-radius:var(--r-sm);font-weight:800;font-size:12px;cursor:pointer;background:var(--accent);color:#fff;font-family:var(--font-b);}
+.dc-btn-out{padding:5px 12px;border:1.5px solid var(--shadow);border-radius:8px;font-size:12px;font-weight:700;color:var(--tm);cursor:pointer;background:var(--bg);font-family:var(--font-b);}
+.dc-wrap{overflow-x:auto;max-height:380px;overflow-y:auto;}
+.dc-tbl{width:100%;border-collapse:collapse;}
+.dc-tbl th{font-size:12px;font-weight:900;color:var(--tm);padding:7px 10px;border-bottom:2px solid var(--shadow);text-align:left;position:sticky;top:0;background:var(--bg);z-index:1;white-space:nowrap;}
+.dc-tbl td{font-size:12px;font-weight:700;color:var(--t2);padding:5px 8px;border-bottom:1px solid rgba(208,213,221,.4);vertical-align:middle;}
+.dc-tbl tr:hover td{background:rgba(84,112,198,.03);}
+.ci{border:1px solid transparent;background:none;font-size:12px;font-weight:700;color:var(--t2);outline:none;font-family:var(--font-b);width:100%;padding:3px 5px;border-radius:4px;}
+.ci:focus{background:#f0f6ff;border-color:var(--accent);}
+.del-btn{border:none;background:none;cursor:pointer;color:var(--red);font-size:14px;padding:2px 6px;border-radius:4px;}
+.del-btn:hover{background:var(--red-light);}
+[contenteditable="true"]{cursor:text;outline:none;border-radius:4px;transition:background .15s;min-width:20px;}
+[contenteditable="true"]:hover{background:rgba(84,112,198,.06);}
+[contenteditable="true"]:focus{background:rgba(84,112,198,.1);padding:1px 4px;}
+.metric-row{display:flex;flex-direction:column;gap:8px;}
+.metric-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;background:var(--bg-page);}
+.metric-label{font-size:12px;font-weight:700;color:var(--tm);flex:1;}
+.metric-val{font-family:var(--font-d);font-size:16px;font-weight:900;color:var(--t1);}
+.metric-bar-wrap{width:100px;height:6px;background:rgba(84,112,198,.15);border-radius:3px;overflow:hidden;}
+.metric-bar{height:100%;border-radius:3px;background:var(--accent-grad);}
+.metric-bar.warn{background:linear-gradient(90deg,var(--amber),#fde09a);}
+.metric-bar.danger{background:linear-gradient(90deg,var(--red),#f5a0a0);}
+</style>
+</head>
+<body>
+<nav class="global-nav">
+  <div class="logo">
+    <div class="logo-name">人力资源<em>决策</em>看板</div>
+    <div class="logo-sub" id="meta-sub" contenteditable="true">HR Intelligence System · CreamViz V1.0</div>
+  </div>
+  <div class="nav-r">
+    <button class="nbtn active" id="btn-db" onclick="switchView('db')">📊 可视化看板</button>
+    <button class="nbtn" id="btn-dc" onclick="switchView('dc')">📋 数据中心</button>
+    <button class="nbtn" onclick="exportPNG()">🖼 导出PNG</button>
+    <button class="nbtn" onclick="exportExcel()">📤 导出Excel</button>
+    <button class="nbtn nbtn-save" onclick="saveLocal()">💾 存档</button>
+  </div>
+</nav>
+<div class="view active" id="view-db">
+  <div class="page-frame">
+    <div class="ptab-row">
+      <button class="ptab active" onclick="switchPage(1)">🏢 P1 · 组织总览</button>
+      <button class="ptab" onclick="switchPage(2)">📈 P2 · 人效分析</button>
+      <button class="ptab" onclick="switchPage(3)">🎯 P3 · 招聘&amp;离职</button>
+      <button class="ptab" onclick="switchPage(4)">🎓 P4 · 培训&amp;风险</button>
+    </div>
+    <div class="page-canvas active" id="page-1">
+      <div class="ph">
+        <div class="ph-title" id="p1h" contenteditable="true">🏢 组织<em>总览</em>——看现状</div>
+        <div class="ph-date" id="p1d" contenteditable="true">统计截至 2026-04-27 · 当前月份：2026年4月</div>
+      </div>
+      <div class="g5">
+        <div class="kpi-card kc-lake"><div class="kl" contenteditable="true">当前总人数</div><div class="kn" style="color:#7bc6e6;" id="kpi-total">1,248</div><div class="kd du" id="kpi-total-delta">↑ 15人 较上月净增</div><div class="ki">👥</div></div>
+        <div class="kpi-card kc-blue"><div class="kl" contenteditable="true">核定编制人数</div><div class="kn" style="color:#5470c6;" id="kpi-planned">1,300</div><div class="kd" style="color:var(--tm);" id="kpi-gap">缺编 52 人</div><div class="ki">📋</div></div>
+        <div class="kpi-card kc-yellow"><div class="kl" contenteditable="true">编制达成率</div><div class="kn" style="color:#b06000;" id="kpi-fillrate">96.0%</div><div class="kd dw">⚠ 未达标 目标≥98%</div><div class="ki">🎯</div></div>
+        <div class="kpi-card kc-purple"><div class="kl" contenteditable="true">员工在岗率</div><div class="kn" style="color:#9a60b4;" id="kpi-activerate">97.8%</div><div class="kd du">↑ 0.3% 较上月</div><div class="ki">✅</div></div>
+        <div class="kpi-card kc-coral"><div class="kl" contenteditable="true">管理层人员占比</div><div class="kn" style="color:#b84400;" id="kpi-mgr-ratio">8.5%</div><div class="kd" style="color:var(--tm);" id="kpi-mgr-count">管理人员 106 人</div><div class="ki">🏅</div></div>
+      </div>
+      <div class="g3">
+        <div class="card"><div class="ch"><div class="ct" id="p1-ct1" contenteditable="true">年龄结构分布</div><div class="cm" contenteditable="true">全体员工</div></div><div id="chart-age" style="height:300px;"></div></div>
+        <div class="card"><div class="ch"><div class="ct" id="p1-ct2" contenteditable="true">学历结构分布</div><div class="cm" contenteditable="true">全体员工</div></div><div id="chart-edu" style="height:300px;"></div></div>
+        <div class="card"><div class="ch"><div class="ct" id="p1-ct3" contenteditable="true">部门人员配置</div><div class="cm" contenteditable="true">实际 vs 编制</div></div><div id="chart-dept" style="height:300px;"></div></div>
+      </div>
+      <div class="summary-box" id="p1-summary" contenteditable="true"><strong>组织现状小结：</strong>当前组织总人数 1,248 人，编制达成率 96.0%，距目标差距 52 人，整体在岗率良好（97.8%）。年龄结构以25-35岁为主（39.9%），组织活力充足；学历结构以本科为主（50.0%），硕士及以上占比 28.6%，匹配中高端业务需求。技术研发与销售市场部门存在一定缺编，需重点关注补充。</div>
+    </div>
+    <div class="page-canvas" id="page-2">
+      <div class="ph">
+        <div class="ph-title" id="p2h" contenteditable="true">📈 人效<em>分析</em>——看效率</div>
+        <div class="ph-date" id="p2d" contenteditable="true">统计周期：2025年5月 — 2026年4月（近12个月）</div>
+      </div>
+      <div class="g4">
+        <div class="kpi-card kc-lake"><div class="kl" contenteditable="true">人均产出（万元）</div><div class="kn" style="color:#7bc6e6;" id="kpi-rev-pp">85.6</div><div class="kd du" id="kpi-rev-delta">↑ 0.6万 较上月</div><div class="ki">💰</div></div>
+        <div class="kpi-card kc-blue"><div class="kl" contenteditable="true">人均利润（万元）</div><div class="kn" style="color:#5470c6;" id="kpi-profit-pp">12.3</div><div class="kd du">↑ 2.5% 较上月</div><div class="ki">💎</div></div>
+        <div class="kpi-card kc-coral"><div class="kl" contenteditable="true">人均人工成本（万元）</div><div class="kn" style="color:#b84400;" id="kpi-cost-pp">18.5</div><div class="kd dw">↑ 1.1% 需关注</div><div class="ki">💸</div></div>
+        <div class="kpi-card kc-yellow"><div class="kl" contenteditable="true">人工成本占收入比</div><div class="kn" style="color:#b06000;" id="kpi-labor-rate">28.6%</div><div class="kd dw">⚠ 偏高 目标≤25%</div><div class="ki">📊</div></div>
+      </div>
+      <div class="g2">
+        <div class="card"><div class="ch"><div class="ct" id="p2-ct1" contenteditable="true">人均产出趋势（万元）</div><div class="cm" contenteditable="true">近12个月</div></div><div id="chart-rev-trend" style="height:280px;"></div></div>
+        <div class="card"><div class="ch"><div class="ct" id="p2-ct2" contenteditable="true">人效综合指标对比</div><div class="cm" contenteditable="true">本月 vs 上月</div></div><div id="chart-eff-bar" style="height:280px;"></div></div>
+      </div>
+      <div class="g2">
+        <div class="card"><div class="ch"><div class="ct" id="p2-ct3" contenteditable="true">在职人数规模趋势</div><div class="cm" contenteditable="true">近12个月</div></div><div id="chart-headcount-trend" style="height:240px;"></div></div>
+        <div class="card"><div class="ch"><div class="ct" id="p2-ct4" contenteditable="true">人效关键指标仪表</div><div class="cm" contenteditable="true">本月达成情况</div></div><div class="metric-row" id="metric-list" style="padding:8px 0;"></div></div>
+      </div>
+      <div class="summary-box" id="p2-summary" contenteditable="true"><strong>人效分析小结：</strong>人均产出持续提升，近12个月从78.2万升至85.6万，增幅9.5%，人效表现良好。但人工成本率28.6%仍高于目标值25%，需在控制人力成本的同时进一步提升产出。建议优化岗位配置，重点提升高价值岗位的人效产出，推动薪酬结构向绩效导向调整。</div>
+    </div>
+    <div class="page-canvas" id="page-3">
+      <div class="ph">
+        <div class="ph-title" id="p3h" contenteditable="true">🎯 招聘<em>供给</em>与离职<em>稳定</em>——看流动</div>
+        <div class="ph-date" id="p3d" contenteditable="true">统计截至 2026-04-27 · 当前月份：2026年4月</div>
+      </div>
+      <div class="g5">
+        <div class="kpi-card kc-lake"><div class="kl" contenteditable="true">本月招聘需求数</div><div class="kn" style="color:#7bc6e6;" id="kpi-needs">86</div><div class="kd" style="color:var(--tm);">已到岗 <span id="kpi-hired" style="color:var(--accent);font-weight:900;">62</span> 人</div><div class="ki">📥</div></div>
+        <div class="kpi-card kc-yellow"><div class="kl" contenteditable="true">招聘完成率</div><div class="kn" style="color:#b06000;" id="kpi-recruit-rate">72.1%</div><div class="kd dw">⚠ 未达标 目标≥80%</div><div class="ki">🎯</div></div>
+        <div class="kpi-card kc-blue"><div class="kl" contenteditable="true">平均招聘周期（天）</div><div class="kn" style="color:#5470c6;" id="kpi-cycle">28</div><div class="kd dw">↑ 3天 较上月偏长</div><div class="ki">⏱</div></div>
+        <div class="kpi-card kc-coral"><div class="kl" contenteditable="true">总离职率</div><div class="kn" style="color:#b84400;" id="kpi-attrition-total">8.5%</div><div class="kd dw">⚠ 黄色预警 目标≤8%</div><div class="ki">🚪</div></div>
+        <div class="kpi-card kc-purple"><div class="kl" contenteditable="true">核心人才离职率</div><div class="kn" style="color:#9a60b4;" id="kpi-core-attrition">3.1%</div><div class="kd" style="color:var(--tm);">在安全范围内</div><div class="ki">⭐</div></div>
+      </div>
+      <div class="g3">
+        <div class="card"><div class="ch"><div class="ct" id="p3-ct1" contenteditable="true">招聘完成率趋势</div><div class="cm" contenteditable="true">近12个月（%）</div></div><div id="chart-recruit-trend" style="height:280px;"></div></div>
+        <div class="card"><div class="ch"><div class="ct" id="p3-ct2" contenteditable="true">离职率趋势</div><div class="cm" contenteditable="true">近12个月（%）</div></div><div id="chart-attrition-trend" style="height:280px;"></div></div>
+        <div class="card"><div class="ch"><div class="ct" id="p3-ct3" contenteditable="true">离职原因分布</div><div class="cm" contenteditable="true">本月离职分析</div></div><div id="chart-attrition-reasons" style="height:280px;"></div></div>
+      </div>
+      <div class="g2">
+        <div class="card"><div class="ch"><div class="ct" id="p3-ct4" contenteditable="true">离职细分指标</div><div class="cm">本月数据</div></div><div class="metric-row" id="attrition-metric-list" style="padding:8px 0;"></div></div>
+        <div class="card"><div class="ch"><div class="ct" id="p3-ct5" contenteditable="true">招聘漏斗分析</div><div class="cm">本月数据</div></div><div id="chart-recruit-funnel" style="height:240px;"></div></div>
+      </div>
+      <div class="summary-box" id="p3-summary" contenteditable="true"><strong>招聘离职小结：</strong>本月招聘完成率72.1%，低于80%目标线，技术岗位招聘缺口尤为突出；总离职率8.5%处于黄色预警区间，薪酬不满与发展受限是主要原因，占比合计60%。建议优先加快关键技术岗位招聘，同时针对核心人员开展留才专项行动。</div>
+    </div>
+    <div class="page-canvas" id="page-4">
+      <div class="ph">
+        <div class="ph-title" id="p4h" contenteditable="true">🎓 培训<em>发展</em>与<em>风险</em>预警——看成长与隐患</div>
+        <div class="ph-date" id="p4d" contenteditable="true">统计截至 2026-04-27 · 综合评估报告</div>
+      </div>
+      <div class="g5">
+        <div class="kpi-card kc-lake"><div class="kl" contenteditable="true">培训覆盖率</div><div class="kn" style="color:#7bc6e6;" id="kpi-train-cover">78.5%</div><div class="kd dw">⚠ 低于目标 85%</div><div class="ki">📚</div></div>
+        <div class="kpi-card kc-blue"><div class="kl" contenteditable="true">人均培训时长（小时）</div><div class="kn" style="color:#5470c6;" id="kpi-train-hours">24.6</div><div class="kd du">↑ 2.4h 较上季度</div><div class="ki">⏰</div></div>
+        <div class="kpi-card kc-purple"><div class="kl" contenteditable="true">培训完成率</div><div class="kn" style="color:#9a60b4;" id="kpi-train-complete">85.3%</div><div class="kd du">✓ 达标 目标≥80%</div><div class="ki">✅</div></div>
+        <div class="kpi-card kc-yellow"><div class="kl" contenteditable="true">关键岗位认证率</div><div class="kn" style="color:#b06000;" id="kpi-cert-rate">62.0%</div><div class="kd dw">⚠ 未达标 目标≥75%</div><div class="ki">🏆</div></div>
+        <div class="kpi-card kc-coral"><div class="kl" contenteditable="true">培训满意度评分</div><div class="kn" style="color:#b84400;" id="kpi-train-satisfaction">4.2</div><div class="kd du">满分5分 良好</div><div class="ki">⭐</div></div>
+      </div>
+      <div class="g3">
+        <div class="card"><div class="ch"><div class="ct" id="p4-ct1" contenteditable="true">各部门培训时长</div><div class="cm" contenteditable="true">本月（小时/人）</div></div><div id="chart-training-dept" style="height:280px;"></div></div>
+        <div class="card"><div class="ch"><div class="ct" id="p4-ct2" contenteditable="true">组织风险预警</div><div class="cm">实时监控</div></div><div class="risk-list" id="risk-list"></div></div>
+        <div class="card"><div class="ch"><div class="ct" id="p4-ct3" contenteditable="true">组织健康度评分</div><div class="cm">综合评级</div></div>
+          <div class="health-wrap"><div id="chart-health" style="width:140px;height:140px;"></div><div class="health-num" id="health-num">72</div><div class="health-label">组织健康综合得分（满分100）</div><div class="health-grade" id="health-grade">B+ 良好</div></div>
+        </div>
+      </div>
+      <div class="card"><div class="ch"><div class="ct" id="p4-ct4" contenteditable="true">管理建议——下一步行动优先级</div><div class="cm">根据数据自动生成 · 可编辑</div></div><div class="advice-list" id="advice-list"></div></div>
+      <div class="summary-box" id="p4-summary" contenteditable="true"><strong>本月组织健康综合评级：B+（良好）</strong>。整体运行基本稳定，人效持续提升；但存在招聘完成率偏低、关键岗位认证不足、离职率接近预警线三项主要隐患。建议本月重点推进：① 关键技术岗位招聘加速；② 高离职部门专项留才行动；③ 关键岗位培训认证计划。</div>
+    </div>
+  </div>
+</div>
+<div class="view" id="view-dc">
+  <div class="page-frame">
+    <div class="ph"><div class="ph-title">📋 <em>数据中心</em>——编辑数据，实时联动看板</div><div class="ph-date">所有编辑自动保存 · 切换至可视化查看效果</div></div>
+    <div class="dc-tab-row">
+      <button class="dc-tab active" onclick="switchDcPage('dept')">🏢 部门编制数据</button>
+      <button class="dc-tab" onclick="switchDcPage('trends')">📈 月度趋势数据</button>
+      <button class="dc-tab" onclick="switchDcPage('attrition')">🚪 离职原因数据</button>
+    </div>
+    <div class="dc-page active" id="dc-dept">
+      <div class="dc-card"><h3>🏢 部门人员编制表</h3><div class="dc-hint">此表驱动 P1·部门配置图。编辑后切换至可视化看板查看实时更新效果。</div>
+        <div class="dc-tbar"><div></div><div class="dc-tbar-btns"><button class="dc-btn-out" onclick="impExcelDept()">📥 导入Excel</button><button class="dc-btn-out" onclick="expExcelDept()">📤 导出Excel</button><button class="dc-btn" onclick="addDeptRow()">➕ 新增部门</button></div></div>
+        <div class="dc-wrap"><table class="dc-tbl"><thead><tr><th>部门名称</th><th>实际人数</th><th>核定编制</th><th>差额</th><th>配置率(%)</th><th>操作</th></tr></thead><tbody id="tb-dept"></tbody></table></div>
+      </div>
+    </div>
+    <div class="dc-page" id="dc-trends">
+      <div class="dc-card"><h3>📈 月度关键指标趋势表</h3><div class="dc-hint">此表驱动 P2·人效趋势图 及 P3·招聘离职趋势图。按月填写，最多12条数据。</div>
+        <div class="dc-tbar"><div></div><div class="dc-tbar-btns"><button class="dc-btn-out" onclick="impExcelTrends()">📥 导入Excel</button><button class="dc-btn-out" onclick="expExcelTrends()">📤 导出Excel</button><button class="dc-btn" onclick="addTrendRow()">➕ 新增月份</button></div></div>
+        <div class="dc-wrap"><table class="dc-tbl"><thead><tr><th>月份</th><th>在职人数</th><th>人均产出(万)</th><th>总离职率(%)</th><th>招聘完成率(%)</th><th>操作</th></tr></thead><tbody id="tb-trends"></tbody></table></div>
+      </div>
+    </div>
+    <div class="dc-page" id="dc-attrition">
+      <div class="dc-card"><h3>🚪 离职原因统计表</h3><div class="dc-hint">此表驱动 P3·离职原因分布图。填写当月各离职原因对应的离职人数。</div>
+        <div class="dc-tbar"><div></div><div class="dc-tbar-btns"><button class="dc-btn-out" onclick="impExcelAttrition()">📥 导入Excel</button><button class="dc-btn-out" onclick="expExcelAttrition()">📤 导出Excel</button><button class="dc-btn" onclick="addAttritionRow()">➕ 新增原因</button></div></div>
+        <div class="dc-wrap"><table class="dc-tbl"><thead><tr><th>离职原因</th><th>离职人数</th><th>占比(%)</th><th>操作</th></tr></thead><tbody id="tb-attrition"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const APP_STATE={meta:{title:'HR决策看板',version:'1.0',savedAt:'2026-04-27'},ui:{titles:{}},activeMonth:'2026-04',monthly:{'2026-04':{org:{total:1248,planned:1300,fillRate:96.0,activeRate:97.8,netAdd:15,mgrRatio:8.5,mgrCount:106},ageData:[{name:'25岁以下',value:156},{name:'25-35岁',value:498},{name:'36-45岁',value:374},{name:'46岁以上',value:220}],eduData:[{name:'博士',value:45},{name:'硕士',value:312},{name:'本科',value:624},{name:'大专',value:198},{name:'其他',value:69}],deptData:[{name:'技术研发',actual:342,planned:380},{name:'销售市场',actual:285,planned:300},{name:'运营',actual:198,planned:210},{name:'客服',actual:126,planned:120},{name:'财务',actual:87,planned:90},{name:'人力资源',actual:65,planned:70},{name:'行政',actual:45,planned:50},{name:'其他',actual:100,planned:80}],efficiency:{revenuePerPerson:85.6,profitPerPerson:12.3,costPerPerson:18.5,laborCostRate:28.6,prevRevenuePerPerson:85.0,prevProfitPerPerson:12.0,prevCostPerPerson:18.3,prevLaborCostRate:28.9},recruitment:{needs:86,hired:62,completionRate:72.1,avgDays:28,keyRoleRate:65.0,funnel:[{stage:'收到简历',count:680},{stage:'初筛通过',count:320},{stage:'笔试/测评',count:180},{stage:'面试通过',count:98},{stage:'发出offer',count:74},{stage:'实际到岗',count:62}]},attrition:{totalRate:8.5,voluntaryRate:6.2,coreRate:3.1,newEmpRate:12.4,total:106},attritionReasons:[{name:'薪酬不满',value:32},{name:'发展受限',value:28},{name:'工作压力',value:18},{name:'管理问题',value:12},{name:'个人原因',value:10}],training:{coverageRate:78.5,avgHours:24.6,completionRate:85.3,certRate:62.0,satisfaction:4.2},trainingByDept:[{name:'技术研发',hours:36.5,rate:92},{name:'销售市场',hours:28.3,rate:85},{name:'运营',hours:22.1,rate:78},{name:'客服',hours:18.6,rate:72},{name:'财务',hours:20.4,rate:80},{name:'人力资源',hours:32.0,rate:90}]}},trends:{months:['2025-05','2025-06','2025-07','2025-08','2025-09','2025-10','2025-11','2025-12','2026-01','2026-02','2026-03','2026-04'],headcount:[1180,1195,1210,1205,1220,1230,1238,1241,1235,1240,1245,1248],attritionRate:[7.2,7.8,8.1,7.5,8.9,9.2,8.6,7.9,8.3,8.8,9.1,8.5],revenuePerPerson:[78.2,79.5,80.1,81.3,82.0,82.8,83.5,84.1,83.8,84.5,85.0,85.6],recruitCompletion:[85.2,88.5,82.3,79.1,76.5,73.8,71.2,74.5,76.8,78.2,75.0,72.1]}};
+let state=JSON.parse(JSON.stringify(APP_STATE));
+const CI={};
+const LS_KEY='hr_dashboard_v2';
+const PAL=['#5470c6','#7bc6e6','#fac858','#9a60b4','#ff9f7f','#ee6666','#ef65ce'];
+let curPage=1,curView='db';
+function switchView(v){curView=v;document.getElementById('view-db').classList.toggle('active',v==='db');document.getElementById('view-dc').classList.toggle('active',v==='dc');document.getElementById('btn-db').classList.toggle('active',v==='db');document.getElementById('btn-dc').classList.toggle('active',v==='dc');if(v==='dc')renderDataCenter();else renderPage(curPage);}
+function switchPage(n){curPage=n;document.querySelectorAll('.ptab').forEach((b,i)=>b.classList.toggle('active',i+1===n));document.querySelectorAll('.page-canvas').forEach((p,i)=>p.classList.toggle('active',i+1===n));renderPage(n);}
+function renderPage(n){if(n===1)renderP1();else if(n===2)renderP2();else if(n===3)renderP3();else if(n===4)renderP4();}
+function mkC(id,opt){const el=document.getElementById(id);if(!el)return;if(CI[id]){try{CI[id].dispose();}catch(e){}delete CI[id];}CI[id]=echarts.init(el);CI[id].setOption(opt);return CI[id];}
+function mkRing(id,data,colors){const el=document.getElementById(id);if(!el)return;if(CI[id]){try{CI[id].dispose();}catch(e){}delete CI[id];}const c=echarts.init(el);c.setOption({tooltip:{trigger:'item',formatter:p=>`${p.name}<br/><b>${p.value} 人 · ${p.percent.toFixed(1)}%</b>`},legend:{show:false},series:[{type:'pie',radius:['36%','60%'],center:['50%','52%'],padAngle:5,itemStyle:{borderRadius:7,borderColor:'#fff',borderWidth:2},data:data.map((d,i)=>({value:d.value,name:d.name,itemStyle:{color:(colors||PAL)[i%PAL.length]}})),label:{show:true,position:'outside',alignTo:'labelLine',formatter:p=>`${p.name}\n${p.percent.toFixed(1)}%`,fontSize:11,fontWeight:700,color:'#4B5563',lineHeight:16},labelLine:{show:true,length:12,length2:8,smooth:0.4},emphasis:{itemStyle:{shadowBlur:10,shadowColor:'rgba(0,0,0,.15)'}}}]});CI[id]=c;return c;}
+function renderP1(){const d=state.monthly[state.activeMonth];const o=d.org;document.getElementById('kpi-total').textContent=o.total.toLocaleString();document.getElementById('kpi-total-delta').textContent=(o.netAdd>=0?'↑':'↓')+' '+Math.abs(o.netAdd)+'人 较上月净增';document.getElementById('kpi-planned').textContent=o.planned.toLocaleString();document.getElementById('kpi-gap').textContent='缺编 '+(o.planned-o.total)+' 人';document.getElementById('kpi-fillrate').textContent=o.fillRate.toFixed(1)+'%';document.getElementById('kpi-activerate').textContent=o.activeRate.toFixed(1)+'%';document.getElementById('kpi-mgr-ratio').textContent=o.mgrRatio.toFixed(1)+'%';document.getElementById('kpi-mgr-count').textContent='管理人员 '+o.mgrCount+' 人';mkRing('chart-age',d.ageData,PAL);mkRing('chart-edu',d.eduData,PAL);const top8=d.deptData.slice(0,8);const names=top8.map(x=>x.name).reverse();const actuals=top8.map(x=>x.actual).reverse();const planneds=top8.map(x=>x.planned).reverse();mkC('chart-dept',{grid:{left:90,right:80,top:36,bottom:16},legend:{top:4,textStyle:{fontSize:12,fontWeight:700,color:'#4B5563'}},xAxis:{type:'value',axisLine:{show:false},splitLine:{lineStyle:{color:'#F3F4F6'}},axisLabel:{fontSize:11,color:'#4B5563'}},yAxis:{type:'category',data:names,axisLabel:{fontSize:11,color:'#1F2937',fontWeight:700}},tooltip:{trigger:'axis',backgroundColor:'#0D1117',borderColor:'#0D1117',textStyle:{color:'#fff',fontWeight:700}},series:[{name:'实际人数',type:'bar',data:actuals,barMaxWidth:14,itemStyle:{color:'#5470c6',borderRadius:[0,6,6,0]},label:{show:true,position:'right',fontSize:11,fontWeight:900,color:'#1F2937',formatter:p=>p.value+'人'}},{name:'核定编制',type:'bar',data:planneds,barMaxWidth:14,itemStyle:{color:'#c8d3f0',borderRadius:[0,6,6,0]},label:{show:true,position:'right',fontSize:11,fontWeight:700,color:'#9CA3AF',formatter:p=>p.value}}]});}
+function renderP2(){const d=state.monthly[state.activeMonth];const e=d.efficiency;document.getElementById('kpi-rev-pp').textContent=e.revenuePerPerson.toFixed(1);document.getElementById('kpi-rev-delta').textContent='↑ '+(e.revenuePerPerson-e.prevRevenuePerPerson).toFixed(1)+'万 较上月';document.getElementById('kpi-profit-pp').textContent=e.profitPerPerson.toFixed(1);document.getElementById('kpi-cost-pp').textContent=e.costPerPerson.toFixed(1);document.getElementById('kpi-labor-rate').textContent=e.laborCostRate.toFixed(1)+'%';const t=state.trends;mkC('chart-rev-trend',{grid:{left:56,right:20,top:48,bottom:30},xAxis:{type:'category',data:t.months,boundaryGap:false,axisLabel:{fontSize:10,color:'#4B5563',rotate:20,interval:1}},yAxis:{type:'value',min:74,axisLabel:{fontSize:11,color:'#4B5563',formatter:v=>v+'万'},splitLine:{lineStyle:{color:'#F3F4F6'}}},tooltip:{trigger:'axis',backgroundColor:'#0D1117',borderColor:'#0D1117',textStyle:{color:'#fff',fontWeight:700}},series:[{name:'人均产出',type:'line',data:t.revenuePerPerson,smooth:true,symbol:'circle',symbolSize:7,lineStyle:{width:3,color:'#5470c6'},itemStyle:{color:'#5470c6',borderWidth:2,borderColor:'#fff'},areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(84,112,198,.25)'},{offset:1,color:'rgba(84,112,198,.03)'}]}},label:{show:true,position:'top',distance:6,fontSize:10,fontWeight:900,color:'#1F2937',formatter:p=>p.value+'万',backgroundColor:'rgba(255,255,255,.85)',padding:[2,4],borderRadius:4}}]});mkC('chart-eff-bar',{grid:{left:86,right:20,top:36,bottom:30},legend:{top:4,textStyle:{fontSize:11,fontWeight:700,color:'#4B5563'}},xAxis:{type:'value',axisLabel:{fontSize:11,color:'#4B5563'},splitLine:{lineStyle:{color:'#F3F4F6'}}},yAxis:{type:'category',data:['人均成本','人均利润','人均产出'],axisLabel:{fontSize:11,color:'#1F2937',fontWeight:700}},tooltip:{trigger:'axis',backgroundColor:'#0D1117',borderColor:'#0D1117',textStyle:{color:'#fff',fontWeight:700}},series:[{name:'本月',type:'bar',barMaxWidth:20,data:[e.costPerPerson,e.profitPerPerson,e.revenuePerPerson],itemStyle:{color:'#5470c6',borderRadius:[0,6,6,0]},label:{show:true,position:'right',fontSize:11,fontWeight:900,color:'#1F2937',formatter:p=>p.value+'万'}},{name:'上月',type:'bar',barMaxWidth:20,data:[e.prevCostPerPerson,e.prevProfitPerPerson,e.prevRevenuePerPerson],itemStyle:{color:'#c8d3f0',borderRadius:[0,6,6,0]},label:{show:true,position:'right',fontSize:11,fontWeight:700,color:'#9CA3AF',formatter:p=>p.value}}]});mkC('chart-headcount-trend',{grid:{left:60,right:20,top:36,bottom:30},xAxis:{type:'category',data:t.months,boundaryGap:false,axisLabel:{fontSize:10,color:'#4B5563',rotate:20,interval:1}},yAxis:{type:'value',min:1160,axisLabel:{fontSize:11,color:'#4B5563'},splitLine:{lineStyle:{color:'#F3F4F6'}}},tooltip:{trigger:'axis',backgroundColor:'#0D1117',borderColor:'#0D1117',textStyle:{color:'#fff',fontWeight:700}},series:[{name:'在职人数',type:'line',data:t.headcount,smooth:true,symbol:'circle',symbolSize:7,lineStyle:{width:3,color:'#9a60b4'},itemStyle:{color:'#9a60b4',borderWidth:2,borderColor:'#fff'},areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(154,96,180,.2)'},{offset:1,color:'rgba(154,96,180,.02)'}]}},label:{show:true,position:'top',distance:6,fontSize:10,fontWeight:900,color:'#1F2937',formatter:p=>p.value,backgroundColor:'rgba(255,255,255,.85)',padding:[2,4],borderRadius:4}}]});const ml=document.getElementById('metric-list');const metrics=[{label:'人均产出',val:e.revenuePerPerson+'万',pct:e.revenuePerPerson/120*100,warn:e.revenuePerPerson<80,danger:false},{label:'人均利润',val:e.profitPerPerson+'万',pct:e.profitPerPerson/20*100,warn:false,danger:false},{label:'人工成本率',val:e.laborCostRate+'%',pct:e.laborCostRate/40*100,warn:e.laborCostRate>25,danger:e.laborCostRate>30},{label:'人均成本',val:e.costPerPerson+'万',pct:e.costPerPerson/25*100,warn:e.costPerPerson>18,danger:false}];ml.innerHTML=metrics.map(m=>`<div class="metric-item"><div class="metric-label">${m.label}</div><div class="metric-val">${m.val}</div><div class="metric-bar-wrap"><div class="metric-bar${m.danger?' danger':m.warn?' warn':''}" style="width:${Math.min(100,m.pct)}%"></div></div></div>`).join('');}
+function renderP3(){const d=state.monthly[state.activeMonth];const r=d.recruitment;const a=d.attrition;document.getElementById('kpi-needs').textContent=r.needs;document.getElementById('kpi-hired').textContent=r.hired;document.getElementById('kpi-recruit-rate').textContent=r.completionRate.toFixed(1)+'%';document.getElementById('kpi-cycle').textContent=r.avgDays;document.getElementById('kpi-attrition-total').textContent=a.totalRate.toFixed(1)+'%';document.getElementById('kpi-core-attrition').textContent=a.coreRate.toFixed(1)+'%';const t=state.trends;mkC('chart-recruit-trend',{grid:{left:56,right:20,top:48,bottom:30},xAxis:{type:'category',data:t.months,boundaryGap:false,axisLabel:{fontSize:10,color:'#4B5563',rotate:20,interval:1}},yAxis:{type:'value',min:60,max:100,axisLabel:{fontSize:11,color:'#4B5563',formatter:v=>v+'%'},splitLine:{lineStyle:{color:'#F3F4F6'}}},tooltip:{trigger:'axis',backgroundColor:'#0D1117',borderColor:'#0D1117',textStyle:{color:'#fff',fontWeight:700},formatter:p=>`${p[0].name}<br/><b>${p[0].value}%</b>`},series:[{name:'招聘完成率',type:'line',data:t.recruitCompletion,smooth:true,symbol:'circle',symbolSize:7,lineStyle:{width:3,color:'#fac858'},itemStyle:{color:'#fac858',borderWidth:2,borderColor:'#fff'},areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(250,200,88,.25)'},{offset:1,color:'rgba(250,200,88,.03)'}]}},label:{show:true,position:'top',distance:6,fontSize:10,fontWeight:900,color:'#1F2937',formatter:p=>p.value+'%',backgroundColor:'rgba(255,255,255,.85)',padding:[2,4],borderRadius:4},markLine:{data:[{yAxis:80,lineStyle:{color:'#ee6666',type:'dashed',width:2},label:{formatter:'目标80%',color:'#ee6666',fontWeight:700,fontSize:11}}]}}]});mkC('chart-attrition-trend',{grid:{left:56,right:20,top:48,bottom:30},xAxis:{type:'category',data:t.months,boundaryGap:false,axisLabel:{fontSize:10,color:'#4B5563',rotate:20,interval:1}},yAxis:{type:'value',min:6,max:11,axisLabel:{fontSize:11,color:'#4B5563',formatter:v=>v+'%'},splitLine:{lineStyle:{color:'#F3F4F6'}}},tooltip:{trigger:'axis',backgroundColor:'#0D1117',borderColor:'#0D1117',textStyle:{color:'#fff',fontWeight:700},formatter:p=>`${p[0].name}<br/><b>${p[0].value}%</b>`},series:[{name:'离职率',type:'line',data:t.attritionRate,smooth:true,symbol:'circle',symbolSize:7,lineStyle:{width:3,color:'#ee6666'},itemStyle:{color:'#ee6666',borderWidth:2,borderColor:'#fff'},areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(238,102,102,.25)'},{offset:1,color:'rgba(238,102,102,.03)'}]}},label:{show:true,position:'top',distance:6,fontSize:10,fontWeight:900,color:'#1F2937',formatter:p=>p.value+'%',backgroundColor:'rgba(255,255,255,.85)',padding:[2,4],borderRadius:4},markLine:{data:[{yAxis:10,lineStyle:{color:'#ee6666',type:'dashed',width:2},label:{formatter:'红色预警10%',color:'#ee6666',fontWeight:700,fontSize:10}},{yAxis:8,lineStyle:{color:'#fac858',type:'dashed',width:1.5},label:{formatter:'黄色8%',color:'#b06000',fontWeight:700,fontSize:10}}]}}]});mkRing('chart-attrition-reasons',d.attritionReasons,PAL);const aml=document.getElementById('attrition-metric-list');const ametrics=[{label:'总离职率',val:a.totalRate+'%',pct:a.totalRate/15*100,warn:a.totalRate>8,danger:a.totalRate>10},{label:'主动离职率',val:a.voluntaryRate+'%',pct:a.voluntaryRate/12*100,warn:a.voluntaryRate>6,danger:false},{label:'核心人才离职率',val:a.coreRate+'%',pct:a.coreRate/8*100,warn:a.coreRate>5,danger:false},{label:'新员工离职率',val:a.newEmpRate+'%',pct:a.newEmpRate/20*100,warn:a.newEmpRate>12,danger:false}];aml.innerHTML=ametrics.map(m=>`<div class="metric-item"><div class="metric-label">${m.label}</div><div class="metric-val">${m.val}</div><div class="metric-bar-wrap"><div class="metric-bar${m.danger?' danger':m.warn?' warn':''}" style="width:${Math.min(100,m.pct)}%"></div></div></div>`).join('');mkC('chart-recruit-funnel',{grid:{left:90,right:70,top:16,bottom:16},xAxis:{type:'value',show:false},yAxis:{type:'category',data:r.funnel.map(f=>f.stage).reverse(),axisLabel:{fontSize:11,color:'#1F2937',fontWeight:700}},tooltip:{trigger:'axis',backgroundColor:'#0D1117',borderColor:'#0D1117',textStyle:{color:'#fff',fontWeight:700}},series:[{type:'bar',data:r.funnel.map((f,i)=>({value:f.count,itemStyle:{color:PAL[i%PAL.length],borderRadius:[0,6,6,0]}})).reverse(),barMaxWidth:28,label:{show:true,position:'right',fontSize:11,fontWeight:900,color:'#1F2937',formatter:p=>p.value+'人'}}]});}
+function renderP4(){const d=state.monthly[state.activeMonth];const tr=d.training;document.getElementById('kpi-train-cover').textContent=tr.coverageRate.toFixed(1)+'%';document.getElementById('kpi-train-hours').textContent=tr.avgHours.toFixed(1);document.getElementById('kpi-train-complete').textContent=tr.completionRate.toFixed(1)+'%';document.getElementById('kpi-cert-rate').textContent=tr.certRate.toFixed(1)+'%';document.getElementById('kpi-train-satisfaction').textContent=tr.satisfaction.toFixed(1);const td=d.trainingByDept;mkC('chart-training-dept',{grid:{left:90,right:70,top:20,bottom:20},xAxis:{type:'value',axisLabel:{fontSize:11,color:'#4B5563',formatter:v=>v+'h'},splitLine:{lineStyle:{color:'#F3F4F6'}}},yAxis:{type:'category',data:td.map(x=>x.name).reverse(),axisLabel:{fontSize:11,color:'#1F2937',fontWeight:700}},tooltip:{trigger:'axis',backgroundColor:'#0D1117',borderColor:'#0D1117',textStyle:{color:'#fff',fontWeight:700}},series:[{type:'bar',data:td.map((x,i)=>({value:x.hours,itemStyle:{color:PAL[i%PAL.length],borderRadius:[0,7,7,0]}})).reverse(),barMaxWidth:22,label:{show:true,position:'right',fontSize:11,fontWeight:900,color:'#1F2937',formatter:p=>p.value+'h'}}]});const risks=[{level:'red',label:'技术研发岗位缺编 38 人',val:'缺编率 10.0%',badge:'红色预警'},{level:'red',label:'招聘完成率持续低于 80%',val:'连续 6 个月',badge:'红色预警'},{level:'amber',label:'总离职率接近黄色预警线',val:'8.5% (阈值8%)',badge:'黄色预警'},{level:'amber',label:'关键岗位认证率不足',val:'62% (目标75%)',badge:'黄色预警'},{level:'amber',label:'新员工离职率偏高',val:'12.4%',badge:'需关注'},{level:'blue',label:'培训覆盖率低于目标',val:'78.5% (目标85%)',badge:'持续改善'},{level:'blue',label:'人工成本率偏高',val:'28.6% (目标25%)',badge:'持续改善'}];document.getElementById('risk-list').innerHTML=risks.map(r=>`<div class="risk-item"><div class="risk-dot ${r.level}"></div><div class="risk-label">${r.label}</div><div class="risk-val ${r.level}">${r.val}</div><span class="risk-badge ${r.level}">${r.badge}</span></div>`).join('');const score=calcHealthScore(d);document.getElementById('health-num').textContent=score;const grade=score>=90?'A+ 优秀':score>=80?'A 优良':score>=70?'B+ 良好':score>=60?'B 一般':'C 需改善';document.getElementById('health-grade').textContent=grade;mkC('chart-health',{series:[{type:'gauge',radius:'100%',startAngle:225,endAngle:-45,min:0,max:100,splitNumber:5,axisLine:{lineStyle:{width:14,color:[[0.6,'#ee6666'],[0.75,'#fac858'],[1,'#5470c6']]}},pointer:{itemStyle:{color:'auto'},length:'60%',width:5},axisTick:{show:false},splitLine:{show:false},axisLabel:{show:false},detail:{show:false},data:[{value:score}]}]});const advices=[{title:'🚀 加速关键技术岗位招聘',desc:'技术研发缺编38人，建议本月启动专项招聘攻坚，增加渠道投入，目标2个月内将完成率提升至85%。'},{title:'💎 高离职部门专项留才行动',desc:'重点排查薪酬不满（32%）与发展受限（28%）两大原因，针对核心技术和销售骨干制定个性化留才方案。'},{title:'📚 推进关键岗位认证计划',desc:'关键岗位认证率62%，距目标75%差13个百分点。建议本季度集中安排认证培训，覆盖技术与销售关键岗位。'},{title:'💰 优化薪酬结构降低人工成本率',desc:'人工成本率28.6%超出目标25%，建议通过绩效挂钩比例调整，将固定成本转化为浮动绩效，提升投入产出比。'},{title:'🎯 提升招聘质量与效率',desc:'平均招聘周期28天，建议建立人才库，优化简历筛选流程，关键岗位目标控制在20天内到岗。'}];document.getElementById('advice-list').innerHTML=advices.map((a,i)=>`<div class="advice-item"><div class="advice-num">0${i+1}</div><div class="advice-body"><div class="advice-title">${a.title}</div><div class="advice-desc">${a.desc}</div></div></div>`).join('');}
+function calcHealthScore(d){let s=0;const o=d.org,e=d.efficiency,r=d.recruitment,a=d.attrition,tr=d.training;s+=Math.min(20,o.fillRate/100*20);s+=e.revenuePerPerson>=80?20:e.revenuePerPerson/80*20;s+=e.laborCostRate<=25?15:Math.max(0,15-(e.laborCostRate-25)*2);s+=r.completionRate/100*20;s+=a.totalRate<=8?15:Math.max(0,15-(a.totalRate-8)*3);s+=tr.coverageRate/100*10;return Math.round(s);}
+function switchDcPage(id){document.querySelectorAll('.dc-tab').forEach(b=>{b.classList.toggle('active',b.textContent.includes(id==='dept'?'编制':id==='trends'?'趋势':'离职'));});document.querySelectorAll('.dc-page').forEach(p=>{p.classList.toggle('active',p.id==='dc-'+id);});if(id==='dept')renderDeptTable();else if(id==='trends')renderTrendsTable();else renderAttritionTable();}
+function renderDataCenter(){renderDeptTable();}
+function renderDeptTable(){const dept=state.monthly[state.activeMonth].deptData;document.getElementById('tb-dept').innerHTML=dept.map((d,i)=>`<tr><td><input class="ci" value="${d.name}" onchange="updateDept(${i},'name',this.value)"></td><td><input class="ci" type="number" value="${d.actual}" onchange="updateDept(${i},'actual',+this.value)"></td><td><input class="ci" type="number" value="${d.planned}" onchange="updateDept(${i},'planned',+this.value)"></td><td>${d.planned-d.actual>=0?'<span class="badge br">缺 '+(d.planned-d.actual)+'</span>':'<span class="badge bb">超 '+Math.abs(d.planned-d.actual)+'</span>'}</td><td>${(d.actual/d.planned*100).toFixed(1)}%</td><td><button class="del-btn" onclick="delDept(${i})">🗑</button></td></tr>`).join('');}
+function updateDept(i,field,val){state.monthly[state.activeMonth].deptData[i][field]=val;saveLocal();renderDeptTable();if(curView==='db')renderPage(curPage);}
+function delDept(i){if(!confirm('确认删除该部门数据？'))return;state.monthly[state.activeMonth].deptData.splice(i,1);saveLocal();renderDeptTable();}
+function addDeptRow(){state.monthly[state.activeMonth].deptData.push({name:'新部门',actual:0,planned:0});saveLocal();renderDeptTable();}
+function renderTrendsTable(){const t=state.trends;document.getElementById('tb-trends').innerHTML=t.months.map((m,i)=>`<tr><td><input class="ci" value="${m}" onchange="updateTrend(${i},'months',this.value)"></td><td><input class="ci" type="number" value="${t.headcount[i]}" onchange="updateTrend(${i},'headcount',+this.value)"></td><td><input class="ci" type="number" step="0.1" value="${t.revenuePerPerson[i]}" onchange="updateTrend(${i},'revenuePerPerson',+this.value)"></td><td><input class="ci" type="number" step="0.1" value="${t.attritionRate[i]}" onchange="updateTrend(${i},'attritionRate',+this.value)"></td><td><input class="ci" type="number" step="0.1" value="${t.recruitCompletion[i]}" onchange="updateTrend(${i},'recruitCompletion',+this.value)"></td><td><button class="del-btn" onclick="delTrend(${i})">🗑</button></td></tr>`).join('');}
+function updateTrend(i,field,val){state.trends[field][i]=val;saveLocal();renderTrendsTable();if(curView==='db')renderPage(curPage);}
+function delTrend(i){if(!confirm('确认删除该月数据？'))return;['months','headcount','revenuePerPerson','attritionRate','recruitCompletion'].forEach(k=>state.trends[k].splice(i,1));saveLocal();renderTrendsTable();}
+function addTrendRow(){state.trends.months.push('2026-05');state.trends.headcount.push(0);state.trends.revenuePerPerson.push(0);state.trends.attritionRate.push(0);state.trends.recruitCompletion.push(0);saveLocal();renderTrendsTable();}
+function renderAttritionTable(){const ar=state.monthly[state.activeMonth].attritionReasons;const total=ar.reduce((s,x)=>s+x.value,0);document.getElementById('tb-attrition').innerHTML=ar.map((d,i)=>`<tr><td><input class="ci" value="${d.name}" onchange="updateAttrition(${i},'name',this.value)"></td><td><input class="ci" type="number" value="${d.value}" onchange="updateAttrition(${i},'value',+this.value)"></td><td>${total>0?(d.value/total*100).toFixed(1)+'%':'—'}</td><td><button class="del-btn" onclick="delAttrition(${i})">🗑</button></td></tr>`).join('');}
+function updateAttrition(i,field,val){state.monthly[state.activeMonth].attritionReasons[i][field]=val;saveLocal();renderAttritionTable();if(curView==='db')renderPage(curPage);}
+function delAttrition(i){if(!confirm('确认删除？'))return;state.monthly[state.activeMonth].attritionReasons.splice(i,1);saveLocal();renderAttritionTable();}
+function addAttritionRow(){state.monthly[state.activeMonth].attritionReasons.push({name:'新原因',value:0});saveLocal();renderAttritionTable();}
+function impExcelDept(){const inp=document.createElement('input');inp.type='file';inp.accept='.xlsx,.xls';inp.onchange=e=>{const reader=new FileReader();reader.onload=ev=>{try{const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);state.monthly[state.activeMonth].deptData=rows.map(r=>({name:r['部门名称']||r.name||'',actual:+(r['实际人数']||r.actual||0),planned:+(r['核定编制']||r.planned||0)}));saveLocal();renderDeptTable();showToast('✅ 导入成功');}catch(err){showToast('❌ 导入失败: '+err.message);}};reader.readAsArrayBuffer(e.target.files[0]);};inp.click();}
+function expExcelDept(){const wb=XLSX.utils.book_new();const data=state.monthly[state.activeMonth].deptData.map(d=>({'部门名称':d.name,'实际人数':d.actual,'核定编制':d.planned,'差额':d.planned-d.actual,'配置率(%)':+(d.actual/d.planned*100).toFixed(1)}));XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'部门编制');XLSX.writeFile(wb,`HR看板_部门编制_${new Date().toISOString().slice(0,10)}.xlsx`);showToast('✅ 导出成功');}
+function impExcelTrends(){const inp=document.createElement('input');inp.type='file';inp.accept='.xlsx,.xls';inp.onchange=e=>{const reader=new FileReader();reader.onload=ev=>{try{const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);state.trends.months=rows.map(r=>r['月份']||r.month||'');state.trends.headcount=rows.map(r=>+(r['在职人数']||r.headcount||0));state.trends.revenuePerPerson=rows.map(r=>+(r['人均产出(万)']||r.revenuePerPerson||0));state.trends.attritionRate=rows.map(r=>+(r['总离职率(%)']||r.attritionRate||0));state.trends.recruitCompletion=rows.map(r=>+(r['招聘完成率(%)']||r.recruitCompletion||0));saveLocal();renderTrendsTable();showToast('✅ 导入成功');}catch(err){showToast('❌ 导入失败: '+err.message);}};reader.readAsArrayBuffer(e.target.files[0]);};inp.click();}
+function expExcelTrends(){const wb=XLSX.utils.book_new();const t=state.trends;const data=t.months.map((m,i)=>({'月份':m,'在职人数':t.headcount[i],'人均产出(万)':t.revenuePerPerson[i],'总离职率(%)':t.attritionRate[i],'招聘完成率(%)':t.recruitCompletion[i]}));XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'月度趋势');XLSX.writeFile(wb,`HR看板_月度趋势_${new Date().toISOString().slice(0,10)}.xlsx`);showToast('✅ 导出成功');}
+function impExcelAttrition(){const inp=document.createElement('input');inp.type='file';inp.accept='.xlsx,.xls';inp.onchange=e=>{const reader=new FileReader();reader.onload=ev=>{try{const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);state.monthly[state.activeMonth].attritionReasons=rows.map(r=>({name:r['离职原因']||r.name||'',value:+(r['离职人数']||r.value||0)}));saveLocal();renderAttritionTable();showToast('✅ 导入成功');}catch(err){showToast('❌ 导入失败: '+err.message);}};reader.readAsArrayBuffer(e.target.files[0]);};inp.click();}
+function expExcelAttrition(){const wb=XLSX.utils.book_new();const ar=state.monthly[state.activeMonth].attritionReasons;const total=ar.reduce((s,x)=>s+x.value,0);const data=ar.map(d=>({'离职原因':d.name,'离职人数':d.value,'占比(%)':+(d.value/total*100).toFixed(1)}));XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'离职原因');XLSX.writeFile(wb,`HR看板_离职原因_${new Date().toISOString().slice(0,10)}.xlsx`);showToast('✅ 导出成功');}
+function exportExcel(){const wb=XLSX.utils.book_new();const d=state.monthly[state.activeMonth];const t=state.trends;XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(d.deptData),'部门编制');const trendsData=t.months.map((m,i)=>({'月份':m,'在职人数':t.headcount[i],'人均产出(万)':t.revenuePerPerson[i],'离职率(%)':t.attritionRate[i],'招聘完成率(%)':t.recruitCompletion[i]}));XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(trendsData),'月度趋势');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(d.attritionReasons),'离职原因');XLSX.writeFile(wb,`HR决策看板_数据导出_${new Date().toISOString().slice(0,10)}.xlsx`);showToast('✅ 全量数据导出成功');}
+async function exportPNG(){const pg=document.getElementById('page-'+curPage);if(!pg)return;showToast('⏳ 正在导出当前页...');await new Promise(r=>setTimeout(r,500));try{const cv=await html2canvas(pg,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#EAECF0'});const a=document.createElement('a');a.download=`HR看板_P${curPage}_${new Date().toISOString().slice(0,10)}.png`;a.href=cv.toDataURL('image/png',1.0);a.click();showToast('✅ 导出成功');}catch(err){showToast('❌ 导出失败');}}
+function collectTitles(){if(!state.ui)state.ui={};if(!state.ui.titles)state.ui.titles={};document.querySelectorAll('[contenteditable="true"][id]').forEach(el=>{state.ui.titles[el.id]=el.innerText.trim();});}
+function restoreEditable(){if(!state.ui?.titles)return;Object.entries(state.ui.titles).forEach(([id,text])=>{const el=document.getElementById(id);if(el)el.innerText=text;});}
+function saveLocal(){collectTitles();state.meta.savedAt=new Date().toISOString().slice(0,10);try{localStorage.setItem(LS_KEY,JSON.stringify(state));showToast('✅ 已保存，下次打开自动恢复');}catch(e){showToast('❌ 保存失败');}}
+function initState(){try{const saved=localStorage.getItem(LS_KEY);if(saved){const loaded=JSON.parse(saved);Object.assign(state,loaded);restoreEditable();}}catch(e){console.error('加载失败',e);}}
+function showToast(msg){const t=document.createElement('div');t.style.cssText='position:fixed;bottom:28px;right:28px;background:#0D1117;color:#fff;padding:11px 22px;border-radius:14px;font-weight:700;font-size:14px;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.35);pointer-events:none;font-family:var(--font-b);';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2500);}
+window.addEventListener('resize',()=>{Object.values(CI).forEach(c=>{if(c&&c.resize)c.resize();});});
+initState();renderPage(1);
+</script>
+</body>
+</html>
